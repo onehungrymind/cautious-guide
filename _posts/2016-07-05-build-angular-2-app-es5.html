@@ -1,0 +1,238 @@
+---
+layout: post
+title: Angular 2 with Handcrafted Tools, Century-Old Techniques and ES5
+date: 2016-07-05 19:57:20.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Angular 2
+- JavaScript
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _yoast_wpseo_primary_category: '29'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_content_score: '30'
+  _thumbnail_id: '1295'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Idea</h2>
+<p>Writing an Angular 2 application in ES5 is a tricky subject, and I have to be careful about the tone I adopt when talking about this approach. Using a modern build system that leverages ES6 or TypeScript with live reloading, scaffolding, linting, deployment options, pre-processors, test runners, etc. is a <strong>superior</strong> course of action and should be the default choice. With that said, there are legitimate reasons why it makes more sense to start with ES5 when building an Angular 2 application. The one scenario that I have run into quite a bit is when a large organization has a sizeable AngularJS 1.x application written in ES5, and they are looking for a migration path that doesn't require introducing a ton of new paradigms to upper management as they propose to tear everything down. Using the new <strong>angular.component</strong> syntax and component driven architecture, you can write an AngularJS 1.5 application that is surprisingly close to an Angular 2 application when written in ES5.</p>
+<p>My official stance is that if you <strong>have</strong> to write an Angular 2 application in ES5, I am sorry. I want to be sensitive to developers who are in this position, and so if I come across as sarcastic, I am also sorry. It is all in good fun and so let's get started on how to write an Angular 2 application in ES5.</p>
+<h2>The Application</h2>
+<p><img src="{{ site.baseurl }}/img/ng2-website-screenshot.png" alt="Angular 2 Website Screenshot" width="1024" height="325" class="alignnone size-full wp-image-1144" /></p>
+<p>I have taken the Angular 2 project I covered in <a href="http://onehungrymind.com/build-a-simple-website-with-angular-2/" target="_blank">Get Started with Angular 2 by Building a Simple Website</a> and converted it into ES5. I am not going to get into every little detail of Angular 2 but instead, focus on covering the specific ES5 implementation details.</p>
+<p>[button link="https://github.com/onehungrymind/angular2-es5-website-routes" size="large" window="yes"]Code[/button]</p>
+<h2>Setting up</h2>
+<p>Since we are using pure ES5, there is no need for any build tools. We will manually reference our JavaScript resources in <strong>index.html</strong>, just like in the good ol' days! Because Angular 2 modules are packaged individually, we need to include them all separately. Look for files that end in *<strong>.umd.js</strong>, which are written in plain JS and eliminate the need for module loaders. Because we are not using a module loader, <strong>order matters!</strong></p>
+<p>{% highlight html %}<br />
+<body><br />
+  <app>Loading...</app><br />
+  <!-- Dependencies --><br />
+  <script src="//npmcdn.com/rxjs@5.0.0-beta.7/bundles/Rx.umd.js"></script><br />
+  <script src="//npmcdn.com/reflect-metadata@0.1.3"></script><br />
+  <script src="//npmcdn.com/zone.js@0.6.12"></script><br />
+  <script src="//npmcdn.com/@angular/core@2.0.0-rc.2/bundles/core.umd.js"></script><br />
+  <script src="//npmcdn.com/@angular/common@2.0.0-rc.2/bundles/common.umd.js"></script><br />
+  <script src="//npmcdn.com/@angular/compiler@2.0.0-rc.2/bundles/compiler.umd.js"></script><br />
+  <script src="//npmcdn.com/@angular/platform-browser@2.0.0-rc.2/bundles/platform-browser.umd.js"></script><br />
+  <script src="//npmcdn.com/@angular/platform-browser-dynamic@2.0.0-rc.2/bundles/platform-browser-dynamic.umd.js"></script><br />
+  <script src="//npmcdn.com/@angular/router@2.0.0-rc.2/bundles/router.umd.js"></script><br />
+  <!-- Our Code --><br />
+  <script src="app/common/state.service.js"></script><br />
+  <script src="app/common/experiments.service.js"></script><br />
+  <script src="app/home/home.component.js"></script><br />
+  <script src="app/about/about.component.js"></script><br />
+  <script src="app/experiments/experiment-details/experiment.detail.component.js"></script><br />
+  <script src="app/experiments/experiments.component.js"></script><br />
+  <script src="app/app.component.js"></script><br />
+  <script src="app/boot.js"></script><br />
+</body><br />
+{% endhighlight %}</p>
+<h2>Bootstrapping</h2>
+<p>To bootstrap our application, we are going to add a <strong>DOMContentLoaded</strong> event listener to our document to tell us when it is safe to bootstrap our application. In the event handler, we will call <strong>ng.platformBrowserDynamic.bootstrap</strong> and pass in our root component and its dependencies. You will notice that everything is wrapped in an IIFE, and we are passing in <strong>window.app</strong> which is what we will attach to our Angular application. For the sake of readability, we are are going to omit the IIFE wrappers out of our remaining snippets.</p>
+<p><strong>app/boot.js</strong><br />
+[js]<br />
+(function(app) {<br />
+  document.addEventListener('DOMContentLoaded', function() {<br />
+    ng.platformBrowserDynamic.bootstrap(app.AppComponent, []);<br />
+  });<br />
+})(window.app || (window.app = {}));<br />
+[/js]</p>
+<h2>Root Component</h2>
+<p>An Angular 2 component in TypeScript consists of a class definition and component metadata as you can see in the snippet below.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'app',<br />
+  templateUrl: require('app/app.component.html'),<br />
+  styleUrls: [require('app/app.component.css')]<br />
+})<br />
+export class AppComponent {}<br />
+[/js]</p>
+<p>The shape is similar in ES5 but with a more explicit syntax. We are manually calling <strong>ng.core.Component</strong> and <strong>ng.core.Class</strong> to provide us with a component we can use in our application. We then store the resulting object to <strong>app.AppComponent</strong> which we reference directly when we bootstrap the application in this line of code <strong>ng.platformBrowserDynamic.bootstrap(app.AppComponent, []);</strong>.</p>
+<p><strong>app/app.component.js</strong><br />
+[js]<br />
+app.AppComponent = ng.core<br />
+  .Component({<br />
+    selector: 'app',<br />
+    templateUrl: 'app/app.component.html',<br />
+    styleUrls: ['app/app.component.css']<br />
+  })<br />
+  .Class({<br />
+    constructor: function() {}<br />
+  });<br />
+[/js]</p>
+<p>And then to complete the connection, we add our root component selector to our <strong>index.html</strong>.</p>
+<p>{% highlight html %}<br />
+<body><br />
+  <app>Loading...</app><br />
+</body><br />
+{% endhighlight %}</p>
+<h2>Subcomponents</h2>
+<p>To illustrate how to use subcomponents in ES5, we are going to start by examining the <strong>app.ExperimentDetailComponent</strong> subcomponent. Notice that we are defining our inputs and outputs as an array of strings instead of using the TypeScript decorators.</p>
+<p><strong>app/experiments/experiment-details/experiment.detail.component.js</strong><br />
+[js]<br />
+app.ExperimentDetailComponent = ng.core<br />
+  .Component({<br />
+    selector: 'experiment',<br />
+    templateUrl: 'app/experiments/experiment-details/experiment.detail.component.html',<br />
+    styles: [ ... ],<br />
+    inputs: ['experiment']<br />
+  })<br />
+  .Class({<br />
+    constructor: function () {},<br />
+    doExperiment: function () {<br />
+      this.experiment.completed += 1;<br />
+    }<br />
+  });<br />
+[/js]</p>
+<p>To consume the <strong>ExperimentDetailComponent</strong> within the <strong>ExperimentsComponent</strong>, we need to add the <strong>directives</strong> property to our component configuration object and pass in the <strong>ExperimentsDetailsComponent</strong>.</p>
+<p><strong>app/experiments/experiments.component.js</strong><br />
+[js]<br />
+app.ExperimentsComponent = ng.core<br />
+  .Component({<br />
+    selector: 'experiments',<br />
+    templateUrl: 'app/experiments/experiments.component.html',<br />
+    directives: [app.ExperimentDetailComponent]<br />
+  })<br />
+  .Class({<br />
+    constructor: function() {<br />
+      this.title = 'Experiments Page';<br />
+      this.body =  'This is the about experiments body';<br />
+      this.message = '';<br />
+      this.experiments = [];<br />
+    },<br />
+    ngOnInit: function() {},<br />
+    updateMessage: function(m) {}<br />
+  })<br />
+[/js]</p>
+<p>The other detail that I want to call out is that our class object is just a key-value map of the <strong>methods</strong> that we need to expose to our component. The interesting part is that the <strong>properties</strong> we need to define generally happen within the constructor method of the object or sometimes implicitly within other methods.</p>
+<h2>Services</h2>
+<p>Because services are strictly imperative in nature, we define those slightly different than a component. We will start with a constructor function and then augment our service by adding additional methods to it via the <strong>prototype</strong> chain. In the code below, we initialize <strong>ExperimentsService</strong> with an array of experiment objects and then add a <strong>getExperiments</strong> method to it by attaching a function to <strong>app.ExperimentsService.prototype.getExperiments</strong> that returns <strong>this.experiments</strong>.</p>
+<p><strong>app/common/experiments.service.js</strong><br />
+[js]<br />
+app.ExperimentsService = function () {<br />
+  this.experiments = [<br />
+    {name: 'Experiment 1', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 2', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 3', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 4', description: 'This is an experiment', completed: 0}<br />
+  ];<br />
+};<br />
+app.ExperimentsService.prototype.getExperiments = function () {<br />
+  return this.experiments;<br />
+};<br />
+[/js]</p>
+<p>To make <strong>ExperimentsService</strong> available to our application, we will add it to the <strong>providers</strong> array on our root component.</p>
+<p><strong>app/app.component.js</strong><br />
+[js]<br />
+app.AppComponent = ng.core<br />
+  .Component({<br />
+    selector: 'app',<br />
+    templateUrl: 'app/app.component.html',<br />
+    styleUrls: ['app/app.component.css'],<br />
+    providers: [ app.ExperimentsService ]<br />
+  })<br />
+  .Class({<br />
+    constructor: function() {}<br />
+  });<br />
+[/js]</p>
+<p>In ES6 and TypeScript, dependency injection happens at the class constructor. In ES5, we approximate that by converting the <strong>constructor</strong> property on our class object from a function to an array that contains our dependencies and the constructor function as the last argument. This is fairly similar to how we did it in Angular 1.x and so nothing too crazy here.</p>
+<p><strong>app/experiments/experiments.component.js</strong><br />
+[js]<br />
+app.ExperimentsComponent = ng.core<br />
+  .Component({<br />
+    selector: 'experiments',<br />
+    templateUrl: 'app/experiments/experiments.component.html',<br />
+    directives: [app.ExperimentDetailComponent]<br />
+  })<br />
+  .Class({<br />
+    constructor: [app.ExperimentsService, function(experimentsService) {<br />
+      this.experiments = [];<br />
+      this.experimentsService = experimentsService;<br />
+    }],<br />
+    ngOnInit: function() {<br />
+      this.experiments = this.experimentsService.getExperiments();<br />
+    }<br />
+  });<br />
+[/js]</p>
+<p>Even though I am totally addicted to the TypeScript / ES6 sugar, I really like how close my code gets when I write Angular 1.x applications in an Angular 2 style. The building blocks are really close, the only real difference is the mechanisms that tie the pieces together.</p>
+<h2>Routes</h2>
+<p>To wrap up this magical mystery tour, let's talk about routes. We are going to cover the RC2 router and revisit this section at a future date when things are a bit more stable. Because routes are an application wide dependency, we are going to add <strong>ng.router.ROUTER_PROVIDERS</strong> to our <strong>bootstrap</strong> call.</p>
+<p><strong>app/boot.js</strong><br />
+[js]<br />
+document.addEventListener('DOMContentLoaded', function() {<br />
+  ng.platformBrowserDynamic.bootstrap(app.AppComponent, [ng.router.ROUTER_PROVIDERS]);<br />
+});<br />
+[/js]</p>
+<p>We will also add <strong>ng.router.ROUTER_DIRECTIVES</strong> to our <strong>directives</strong> array on our root component. This will allow us to use <strong>routerLink</strong> in our template to navigate between routes. To define our routing table, we first call <strong>ng.router.Routes</strong> and pass in an object that maps URL paths to a component which will return a partially applied function that we will call and pass in <strong>app.Component</strong> as its parameter. This applies the routing table to <strong>app.Component</strong> and returns it intact and unharmed.</p>
+<p><strong>app/app.component.js</strong><br />
+[js]<br />
+app.AppComponent = ng.core<br />
+  .Component({<br />
+    selector: 'app',<br />
+    templateUrl: 'app/app.component.html',<br />
+    styleUrls: ['app/app.component.css'],<br />
+    directives: [ ng.router.ROUTER_DIRECTIVES ],<br />
+    providers: [ app.ExperimentsService ]<br />
+  })<br />
+  .Class({<br />
+    constructor: function() {}<br />
+  });</p>
+<p>app.AppComponent = ng.router.Routes([<br />
+  {path: '/',            component: app.HomeComponent},<br />
+  {path: '/home',        component: app.HomeComponent},<br />
+  {path: '/about',       component: app.AboutComponent},<br />
+  {path: '/experiments', component: app.ExperimentsComponent},<br />
+  {path: '/*',           component: app.HomeComponent }<br />
+])(app.AppComponent);<br />
+[/js]</p>
+<p>In our <strong>app.component.html</strong> file, we will first add <strong>router-outlet</strong> to the layout and then update our header to navigate to their respective routes.</p>
+<p><strong>app/app.component.html</strong><br />
+{% highlight html %}</p>
+<header id="header">
+<h1 id="logo">
+    <a [routerLink]="['/home']"><br />
+  </h1>
+<div id="menu">
+    <a [routerLink]="['/home']" class="btn">Home<br />
+    <a [routerLink]="['/about']" class="btn">About<br />
+    <a [routerLink]="['/experiments']" class="btn">Experiments
+  </div>
+</header>
+<div id="container">
+  <router-outlet></router-outlet>
+</div>
+<p>{% endhighlight %}</p>
+<h2>Conclusion</h2>
+<p>Writing an Angular 2 application in ES5 would not be my first choice because I am inherently lazy and I like abstracting out the hard bits into sugar coated candies that I do not have to think about. And then there is reality. I really REALLY like Angular 2 and it has changed the way the way that I write all my web applications and I encourage everyone to embrace Angular 2 patterns no matter what version they are working with. Using ES5 provides a strong strategic advantage when a piece by piece upgrade is the only option and / or getting executive buy-in will be hard.</p>
+<p>Be sure to grab the project code and let me know what you think!</p>
+<p>[button link="https://github.com/onehungrymind/angular2-es5-website-routes" size="large" window="yes"]Code[/button]</p>

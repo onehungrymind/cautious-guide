@@ -1,0 +1,325 @@
+---
+layout: post
+title: Just Enough Angular for Designers
+date: 2015-06-01 07:35:42.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _wpcom_is_markdown: '1'
+  _wpas_done_all: '1'
+  _thumbnail_id: '1053'
+  _yoast_wpseo_primary_category: ''
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Intro</h2>
+<p>I recently gave a talk at <a href="http://onehungrymind.com/just-enough-angular-for-designers/" target="_blank">ngVegas 2015</a> called <a href="http://onehungrymind.com/turn-your-designers-into-deathstars-with-angular/" target="_blank">Turn Your Designers Into Deathstars with Angular</a> where I make the case that we need to make designers first class citizens in AngularJS.</p>
+<blockquote><p><strong>UPDATE</strong>: A huge shoutout to my designer buddy <a href="https://twitter.com/JordanLeeArtist" target="_blank">Jordan Stoddard</a> for hand drawing all of the sweet graphics for this post!</p></blockquote>
+<p>A major portion of this talk was focused on teaching "just enough" Angular so that a designer could get started. I wanted to dedicate an entire blog post to covering these concepts so that someone new to Angular or someone with a strong design background would have a resource to help them get started.</p>
+<p><img src="{{ site.baseurl }}/img/plunks.png" alt="Designer Plunks" width="889" height="618" class="alignnone size-full wp-image-1042" /></p>
+<p>I posted six exercises at the link below that I would encourage anyone new to Angular to go through. I am assuming a basic knowledge of HTML and CSS, but I have done my best to make them as simple and as approachable as possible. With that said, this article is for someone new to Angular; please let me know in the comments what you liked and what you found confusing. Let's get started!</p>
+<p>[button link="http://bit.ly/ng-designers" size="large" window="yes"]The Exercises[/button]</p>
+<div style="margin:20px;"></div>
+<h2>Everything is an Object</h2>
+<p>HTML exists to visually represent some object that exists in the "real" world. If we have a table of users, the table represents the group of users as a whole while each row is a representation of a single user. Underneath that HTML exists an object that can be represented as a JSON (JavaScript Object Notation) object.</p>
+<p>Separating the HTML markup from the actual object it represents is one of the most fundamental steps for learning Angular. Once you can look past the HTML and articulate the JSON object that is behind it, you are now in a place where you can start using Angular to bind your HTML to that object and make your markup dynamic.</p>
+<blockquote><p>
+JSON has a fairly simple syntax which can be read about here <a href="http://en.wikipedia.org/wiki/JSON#Data_types.2C_syntax_and_example" target="_blank">http://en.wikipedia.org/wiki/JSON</a>
+</p></blockquote>
+<p><img src="{{ site.baseurl }}/img/ngdesigners01.png" alt="ngdesigners01" width="900" height="435" class="alignnone size-full wp-image-1054" /></p>
+<h2>Exercise 01: Data Binding</h2>
+<p>We will start with one-way data binding as we bind our HTML to a property in our JavaScript. If you go to the <strong>01 Data Binding</strong> exercise via the link below and click on the <em>scripts.js</em> file, you will see the code below.</p>
+<p>[js]<br />
+angular.module('ngDesigners', [])<br />
+  .controller('MainCtrl', function(){<br />
+    this.hello = 'world';<br />
+    this.item = {<br />
+      name: 'My Name',<br />
+      description: 'This description'<br />
+    };<br />
+  });<br />
+[/js]</p>
+<p>We are declaring an Angular module called <strong>ngDesigners</strong> which is basically a container for telling Angular how the application should be configured. On that module, we are going to create a controller called <strong>MainCtrl</strong> which we will use to define properties that we want to make available in our HTML.</p>
+<p>In the HTML below, we have an abbreviated version of the HTML in the <em>index.html</em> file with two interesting attributes on our HTML. We are bootstrapping our Angular application with the <strong>ng-app="ngDesigners"</strong> attribute and directing Angular to use our <strong>ngDesigners</strong> module as a starting point. We are also telling our application that we want to control the <strong>body</strong> tag with our <strong>MainCtrl</strong>.</p>
+<p>{% highlight html %}<br />
+<html ng-app="ngDesigners"><br />
+  <body ng-controller="MainCtrl as main" class="container"><br />
+  </body><br />
+</html><br />
+{% endhighlight %}</p>
+<p>Angular uses a double curly brace syntax to indicate that we are binding to a JavaScript property in our HTML. To display the <strong>this.hello</strong> property in our HTML, we just need to add this code <strong>{{main.hello}}</strong> to our HTML as seen in the snippet below.</p>
+<p>{% highlight html %}<br />
+<html ng-app="ngDesigners"><br />
+  <body ng-controller="MainCtrl as main" class="container"><br />
+  {{main.hello}}<br />
+  </body><br />
+</html><br />
+{% endhighlight %}</p>
+<p>This will render as <strong>world</strong> when the HTML is loaded in the browser. We can also bind to properties on objects using the same technique such as <strong>{{main.item.name}}</strong> which will render as <strong>My Name</strong>. The takeaway here is that we can define a property in our JavaScript and bind to and display the value of that property in our HTML using Angular's binding syntax.</p>
+<p>[button link="http://plnkr.co/edit/J6G7W7" size="large" window="yes"]01 Data Binding[/button]</p>
+<div style="margin:20px;"></div>
+<p><img src="{{ site.baseurl }}/img/ngdesigners02.png" alt="ngdesigners02" width="900" height="435" class="alignnone size-full wp-image-1055" /></p>
+<h2>Exercise 02: ngModel</h2>
+<p><img src="{{ site.baseurl }}/img/ng-designers.02-01.png" alt="ngModel" width="689" height="209" class="alignnone size-full wp-image-1046" /></p>
+<p>The double curly brace syntax is really fantastic, but it is uni-directional in that you cannot manipulate the value of the property from the HTML. It only flows in one direction and that is from the JavaScript to the HTML. What happens if you actually do need to capture user input and update the JavaScript accordingly? This is where <strong>ngModel</strong> comes into play. By using <strong>ngModel</strong>, we are able to establish two-way data binding between the HTML and JavaScript.</p>
+<blockquote><p>
+It is common to use camel case when defining a variable in JavaScript while using snake case to reference attributes in HTML. We are referring to "ngModel" as camelCase but Angular automatically converts it to snake-case in our HTML which is why we are seeing it as "ng-model". This will show up in a few other cases as you progress in Angular so I just wanted to make you aware of that as soon as possible to avoid confusion.
+</p></blockquote>
+<p>We will start with the same HTML we used in the previous example, as seen below.</p>
+<p>{% highlight html %}<br />
+<html ng-app="ngDesigners"><br />
+  <body ng-controller="MainCtrl as main" class="container"><br />
+  {{main.hello}}<br />
+  </body><br />
+</html><br />
+{% endhighlight %}</p>
+<p>By attaching <strong>ngModel</strong> to an input element, we can change the value of the input field and see it automatically update everything else on the page that is bound to that property. When our application runs, the HTML within the <strong>h4</strong> tag will render as <strong>world</strong>. Because we added <strong>ng-model="main.hello</strong> to our input field, it will also be pre-populated with the value of <strong>world</strong>.</p>
+<p>{% highlight html %}</p>
+<h4>{{main.hello}}</h4>
+<p><input type="text" class="form-control" ng-model="main.hello" /><br />
+{% endhighlight %}</p>
+<p>If you run the example from the link below, you will see that both the <strong>h4</strong> and <strong>input</strong> tags are populated appropriately; but what happens when you modify that value in the <strong>input</strong> field? The value in the <strong>h4</strong> tag updates as you type! This is because <strong>ngModel</strong> is updating the value of <strong>this.hello</strong> in the controller which is then updating anything else that is bound to it. In this case, it is the additional <strong>h4</strong> tag that is getting updated.</p>
+<p>You can also bind to properties on objects using the appropriate dot notation. In the HTML below, we are binding two input fields to the <strong>name</strong> and <strong>description</strong> properties of the <strong>item</strong> object. When the user updates the value of either one of those input fields then the respective property is immediately updated.</p>
+<p>{% highlight html %}</p>
+<h4>Name: {{main.item.name}}</h4>
+<p><input type="text" class="form-control" ng-model="main.item.name" /></p>
+<h4>Description: {{main.item.description}}</h4>
+<p><input type="text" class="form-control" ng-model="main.item.description" /><br />
+{% endhighlight %}</p>
+<p>An astute observer would see that we are starting to end up with something that looks like what could be a full-fledged form. For instance, what if we changed those two input fields to bind to <strong>main.user.email</strong> and <strong>main.user.password</strong>? That is right! We would have a login form. More on that later.</p>
+<p>[button link="http://plnkr.co/edit/RIUUmm" size="large" window="yes"]02 ngModel[/button]</p>
+<div style="margin:20px;"></div>
+<p><img src="{{ site.baseurl }}/img/ngdesigners03.png" alt="ngdesigners03" width="900" height="683" class="alignnone size-full wp-image-1056" /></p>
+<h2>Exercise 03: ngRepeat</h2>
+<p><img src="{{ site.baseurl }}/img/ng-designers.03-01.png" alt="ngRepeat" width="685" height="270" class="alignnone size-full wp-image-1047" /></p>
+<p>We now know how to bind to a single object and display in our HTML but what if we want to bind to a bunch of objects? In the HTML below, we have a single object defined on the <strong>item</strong> property and an array of objects on the <strong>items</strong> property.</p>
+<p>[js]<br />
+angular.module('ngDesigners', [])<br />
+  .controller('MainCtrl', function() {<br />
+    this.item = {<br />
+      name: 'Single Item',<br />
+      description: 'Some description'<br />
+    }<br />
+    this.items = [<br />
+      {<br />
+        name: 'First Item',<br />
+        description: 'Some description'<br />
+      },<br />
+      {<br />
+        name: 'Second Item',<br />
+        description: 'Some description'<br />
+      },<br />
+      {<br />
+        name: 'Third Item',<br />
+        description: 'Some description'<br />
+      }<br />
+    ];<br />
+  });<br />
+[/js]</p>
+<p>Applying the techniques from the previous lessons, we can display the single <strong>item</strong> object as we did in the HTML below.</p>
+<p>{% highlight html %}</p>
+<div class="alert">
+  <strong>{{main.item.name}}</strong><br />
+  {{main.item.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>Pay particular attention to how we are simply binding to the <strong>name</strong> and <strong>description</strong> properties on the <strong>item</strong> object. To lay out the <strong>items</strong> array, we need to add <strong>ng-repeat="item in main.items"</strong> to our <strong>div</strong>. This is essentially telling Angular that for every element in <strong>main.items</strong> repeat that particular HTML element and its children and create a reference to that object and call it <strong>item</strong>. You will notice that the HTML template below is almost identical to the HTML above with the exception that we are no longer referring to an <strong>item</strong> on the <strong>MainCtrl</strong> via <strong>main.item</strong> but instead to a local variable named <strong>item</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="alert" ng-repeat="item in main.items">
+  <strong>{{item.name}}</strong><br />
+  {{item.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>This is really exciting because we have now introduced a way to make a very dynamic layout with a very small amount of code. How would you use this technique to layout the <strong>items</strong> collection in a table? Could you create a sheet of thumbnails using this? Check out the exercise below and give the bonus technique a spin for something really awesome.</p>
+<p>[button link="http://plnkr.co/edit/62gVzC" size="large" window="yes"]03 ngRepeat[/button]</p>
+<div style="margin:20px;"></div>
+<p><img src="{{ site.baseurl }}/img/ngdesigners04.png" alt="ngdesigners04" width="900" height="435" class="alignnone size-full wp-image-1057" /></p>
+<h2>Exercise 04: ngClick</h2>
+<p><img src="{{ site.baseurl }}/img/ng-designers.04-01.png" alt="ngClick" width="688" height="387" class="alignnone size-full wp-image-1048" /></p>
+<p>We have seen how to bind to properties in our controller but what happens when we want to capture a user interaction and execute some JavaScript based on that action? Angular comes with a handful of really useful HTML attributes to capture these interactions; the easiest and most useful one by far is <strong>ngClick</strong>. This allows us to capture a click event from the user and execute some expression. Occasionally, depending on the designer I am working with, I will stub out the JavaScript functions; but I have found that most everyone can replicate a simple setter function like <strong>setCurrentItem</strong> once they have seen it a few times.</p>
+<p>[js]<br />
+angular.module('ngDesigners', [])<br />
+  .controller('MainCtrl', function() {<br />
+    this.setCurrentItem = function(item){<br />
+      this.currentItem = item;<br />
+    };<br />
+    this.items = [<br />
+      {<br />
+        name: 'First Item',<br />
+        description: 'Some description'<br />
+      },<br />
+      {<br />
+        name: 'Second Item',<br />
+        description: 'Some description'<br />
+      },<br />
+      {<br />
+        name: 'Third Item',<br />
+        description: 'Some description'<br />
+      }<br />
+    ];<br />
+  });<br />
+[/js]</p>
+<p>The <strong>setCurrentItem</strong> method takes an <strong>item</strong> parameter and assigns it to the <strong>currentItem</strong> property. We can display the <strong>currentItem</strong> in our HTML using the template below.</p>
+<p>{% highlight html %}</p>
+<div class="alert alert-warning">
+<h4>Current Item</h4>
+<p>  <strong>{{main.currentItem.name}}</strong><br />
+  {{main.currentItem.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>And we can display all of the <strong>items</strong> in <strong>main.items</strong> using <strong>ngRepeat</strong> as seen in the code below.</p>
+<p>{% highlight html %}</p>
+<div class="alert alert-success" ng-repeat="item in main.items">
+  <strong>{{item.name}}</strong><br />
+  {{item.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>So how do we capture a click from the user in our list of items and set that as the current item? We accomplish that by adding <strong>ng-click="main.setCurrentItem(item)"</strong> to the same element that we declared <strong>ngRepeat</strong> on.</p>
+<p>{% highlight html %}</p>
+<div class="alert alert-success" ng-repeat="item in main.items" ng-click="main.setCurrentItem(item)">
+  <strong>{{item.name}}</strong><br />
+  {{item.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>Angular does a really good job of keeping tracking of context; so when <strong>main.setCurrent(item)</strong> is called, Angular knows that <strong>item</strong> is referencing the actual item that was clicked.</p>
+<blockquote><p>
+The cousin to <strong>ngClick</strong> is <strong>ngSubmit</strong> which you can attach to a form and captures <strong>onsubmit</strong> events. You can read about it here <a href="https://docs.angularjs.org/api/ng/directive/ngSubmit" target="_blank">https://docs.angularjs.org/api/ng/directive/ngSubmit</a>
+</p></blockquote>
+<p>[button link="http://plnkr.co/edit/yD5krX" size="large" window="yes"]04 ngClick[/button]</p>
+<div style="margin:20px;"></div>
+<p><img src="{{ site.baseurl }}/img/ngdesigners05.png" alt="ngdesigners05" width="900" height="564" class="alignnone size-full wp-image-1058" /></p>
+<h2>Exercise 05: ngIf</h2>
+<p><img src="{{ site.baseurl }}/img/ng-designers.05-01.png" alt="ngIf" width="688" height="225" class="alignnone size-full wp-image-1049" /></p>
+<p>We can further enhance the user experience by toggling elements on the page based on predefined conditions. Angular comes with a handy tool called <strong>ngIf</strong> that will place an element on the page or remove it depending on if the expression defined in it evaluates to <strong>true</strong> or <strong>false</strong>. In the code below, we have an array of items with a <strong>visible</strong> property that is set to <strong>true</strong>. We also have a method called <strong>toggleVisibility</strong> that accepts an <strong>item</strong> parameter and toggles its <strong>visible</strong> property.</p>
+<p>[js]<br />
+angular.module('ngDesigners', [])<br />
+  .controller('MainCtrl', function() {<br />
+    this.toggleVisibility = function(item){<br />
+      item.visible = !item.visible;<br />
+    };<br />
+    this.items = [<br />
+      {<br />
+        name: 'First Item',<br />
+        description: 'Some description',<br />
+        visible: true<br />
+      },<br />
+      {<br />
+        name: 'Second Item',<br />
+        description: 'Some description',<br />
+        visible: true<br />
+      },<br />
+      {<br />
+        name: 'Third Item',<br />
+        description: 'Some description',<br />
+        visible: true<br />
+      }<br />
+    ];<br />
+  });<br />
+[/js]</p>
+<p>These lessons were designed to stack on each other and we are going to start to see how we can take simple concepts and compose them into interesting things. There is nothing keeping us from using <strong>ngRepeat</strong> more than once on the same data structure in a page. In our example, we will using <strong>ngRepeat</strong> to lay out our navigation as well as lay out <strong>div</strong> elements with additional information. In the code below, we are using <strong>ngRepeat</strong> to create a button for each <strong>item</strong> in our <strong>items</strong> array and then call <strong>main.toggleVisibility(item)</strong> on click.</p>
+<p>{% highlight html %}</p>
+<div class="btns">
+  <button type="button" class="btn btn-default" ng-repeat="item in main.items" ng-click="main.toggleVisibility(item)">{{item.name}}</button>
+</div>
+<p>{% endhighlight %}</p>
+<p>We will also use <strong>ngRepeat</strong> to create a <strong>div</strong> element for each <strong>item</strong> as well.</p>
+<p>{% highlight html %}</p>
+<div class="alert alert-success" ng-repeat="item in main.items">
+  <strong>{{item.name}}</strong><br />
+  {{item.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>And to toggle the visibility of the <strong>item</strong> based on the current value of <strong>item.visibility</strong> we just need to add <strong>ng-if="item.visible"</strong> to our template.</p>
+<p>{% highlight html %}</p>
+<div class="alert alert-success" ng-repeat="item in main.items" ng-if="item.visible">
+  <strong>{{item.name}}</strong><br />
+  {{item.description}}
+</div>
+<p>{% endhighlight %}</p>
+<p>Check out the bonus at the end of this example for how to dynamically attach a class to an element using <strong>ngClass</strong>.</p>
+<p>[button link="http://plnkr.co/edit/pSDc02" size="large" window="yes"]05 ngIf[/button]</p>
+<div style="margin:20px;"></div>
+<p><img src="{{ site.baseurl }}/img/ngdesigners06-755x1024.png" alt="ngdesigners06" width="755" height="1024" class="alignnone size-large wp-image-1059" /></p>
+<h2>Exercise 06: Simple States</h2>
+<p>We could stop here and have plenty of ammunition to go and start building interfaces but I want to take it once step further by introducing simple states using <a href="https://github.com/angular-ui/ui-router" target="_blank">ui-router</a>. We can use <strong>ui-router</strong> to map our URL to specific templates within our application. For instance, if you look at the screenshot below you will see three buttons with a single button given focus and some corresponding content below those buttons. This is pretty exciting because we are starting to see the makings of a simple website or application!</p>
+<p><img src="{{ site.baseurl }}/img/ng-designers.06-01.png" alt="Simple States" width="735" height="304" class="alignnone size-full wp-image-1045" /></p>
+<p>The buttons are pretty straightforward but make special note of where the <strong>href</strong> attributes are pointing. Routes in Angular are generally are referenced with a hash symbol.</p>
+<p>{% highlight html %}</p>
+<div class="btns">
+  <a href="#/home" class="btn btn-default">Home</a><br />
+  <a href="#/about" class="btn btn-default">About</a><br />
+  <a href="#/contact" class="btn btn-default">Contact</a>
+</div>
+<p>{% endhighlight %}</p>
+<p>So how does Angular know where to put the specific content designated for each route? We tell Angular where we want our content to load by defining <strong>ui-view</strong> on our target element.</p>
+<blockquote><p>
+Just to be clear, <strong>ui-router</strong> is very powerful with a lot of really complicated things you can accomplish with it. Those things are outside of the scope and intent of what I am trying to convey here. We are focusing on interpreting the current URL and loading an appropriate template into the page. That's all!
+</p></blockquote>
+<p>{% highlight html %}</p>
+<div class="btns">
+  <a href="#/home" class="btn btn-default">Home</a><br />
+  <a href="#/about" class="btn btn-default">About</a><br />
+  <a href="#/contact" class="btn btn-default">Contact</a>
+</div>
+<div ui-view></div>
+<p>{% endhighlight %}</p>
+<p>To use <strong>ui-router</strong>, we need to include the source file in our HTML and include the submodule in our module definition as you can see in the code below. We also will define our routes within the config block of our application so I have stubbed that out as well. I generally will define at least one route for a designer before I hand it off.</p>
+<p>[js]<br />
+angular.module('ngDesigners', [<br />
+  'ui.router'<br />
+])<br />
+  .config(function($stateProvider, $urlRouterProvider) {<br />
+  });<br />
+[/js]</p>
+<p>To simplify this a bit, I want to show you a single route on its own to illustrate that, in our case, there isn't much to it. We are defining a <strong>state</strong> on <strong>$stateProvider</strong> and calling it <strong>home</strong>. Within this state, we are saying that we want to activate this state when the <strong>url</strong> matches <strong>/home</strong> and we want to load in the <strong>home.tmpl.html</strong> which we defined via <strong>templateUrl</strong>. Take a moment and ponder what this could possibly look like if we were defining a route for the <strong>About</strong> state.</p>
+<p>[js]<br />
+$stateProvider<br />
+  .state('home', {<br />
+    url: "/home",<br />
+    templateUrl: "home.tmpl.html"<br />
+  })<br />
+[/js]</p>
+<p>Probably pretty similar right? In fact, they are almost identical. We can stack our routes as you can see in the code below and I think that it actually reads pretty well. The intent of each route is pretty clear about what it wants to target and the template that it wants to use.</p>
+<p>[js]<br />
+angular.module('ngDesigners', [<br />
+  'ui.router'<br />
+])<br />
+  .config(function($stateProvider, $urlRouterProvider) {<br />
+    $stateProvider<br />
+      .state('home', {<br />
+        url: "/home",<br />
+        templateUrl: "home.tmpl.html"<br />
+      })<br />
+      .state('about', {<br />
+        url: "/about",<br />
+        templateUrl: "about.tmpl.html"<br />
+      })<br />
+      .state('contact', {<br />
+        url: "/contact",<br />
+        templateUrl: "contact.tmpl.html"<br />
+      });<br />
+      $urlRouterProvider.otherwise("/home");<br />
+  });<br />
+[/js]</p>
+<p>We will add <strong>$urlRouterProvider.otherwise("/home");</strong> at the bottom of the <strong>config</strong> block that will redirect the user back to the <strong>home</strong> route if a route cannot be matched based on the URL.</p>
+<p>[button link="http://plnkr.co/edit/eh4Mkj" size="large" window="yes"]06 Simple States[/button]</p>
+<div style="margin:20px;"></div>
+<h2>Review</h2>
+<p>My goal is that if you have followed along to this point and done the challenges for each exercise, you will be able to start articulating ways to bring static layouts to life with Angular. On a personal note, I would encourage anyone when learning a new thing to just have fun! Do not be afraid to express yourself and play around. I truly believe that I can approximate most layouts with the techniques that I covered in the six exercises we covered in this post. Let me know what you think in the comments below and let me know if you build anything rad! #highFive</p>
+<h2>Resources</h2>
+<p>Here are some great resources if you want to learn more Angular.</p>
+<p><a href="https://docs.angularjs.org/api/" target="_blank">Angular Docs</a></p>
+<p><a href="https://docs.angularjs.org/guide" target="_blank">Angular Developer Guide</a></p>
+<p><a href="https://egghead.io/" target="_blank">Egghead.io</a></p>

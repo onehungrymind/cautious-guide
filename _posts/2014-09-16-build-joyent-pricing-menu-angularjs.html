@@ -1,0 +1,281 @@
+---
+layout: post
+title: Build a Joyent Pricing Menu with AngularJS
+date: 2014-09-16 20:23:53.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- UI
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '882'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Backstory</h2>
+<p>I will be the first person to admit that I love pretty things. A lot of what I do is cause and effect from seeing something really awesome and then being compelled to go build some version of it. The <a title="Joyent" href="https://www.joyent.com/products/compute-service/pricing" target="_blank">pricing menu</a> at Joyent completely captured my attention the first time I saw it. The most outstanding feature is how the category that your mouse is on is given emphasis across all of the instances so it is easy to compare features.</p>
+<p>In this blog post, we are going to build out a similar menu in AngularJS and learn about some of the crazy things you can do with AngularJS templates.</p>
+<p>[button link="http://onehungrymind.com/demos/joyent/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-pricing-menu" size="large" window="yes"]Code[/button]</p>
+<h2>The Data</h2>
+<p>Mocking out the data was easily the most time consuming part of the entire project. To set context, the two arrays that make up the model are larger than any other piece of what we will be building. It's all downhill from here friends!</p>
+<p>The only thing I want to point out in the <strong>InstanceService</strong> is that you have a <strong>categories</strong> array and an <strong>instances</strong> array with a <strong>category</strong> property on the <strong>instance</strong> objects that coincides with a <strong>category</strong> name. We are going to use this intersection in just a moment to control our layout.</p>
+<p>[js]<br />
+angular.module('website', ['ngAnimate'])<br />
+.controller('MainCtrl', function ($scope, $window, InstanceService) {<br />
+    $scope.categories = InstanceService.getCategories();<br />
+    $scope.instances = InstanceService.getInstances();<br />
+})<br />
+.factory('InstanceService', function () {<br />
+    var categories = [<br />
+        {name: 'standard', display: 'Standard'},<br />
+        {name: 'highmemory', display: 'High Memory'},<br />
+        {name: 'highcpu', display: 'High CPU'},<br />
+        {name: 'highio', display: 'High I/O'}<br />
+    ];</p>
+<pre><code>var instances = [
+    { id: '1_1', category: 'standard', ram: '0.625', cpu: '0.15', disk: '20', network: '10', price: '0.020'},
+    { id: '1_2', category: 'standard', ram: '1.75', cpu: '1', disk: '56', network: '10', price: '0.056'},
+    { id: '1_3', category: 'standard', ram: '3.75', cpu: '1', disk: '123', network: '10', price: '0.12'},
+    { id: '2_1', category: 'highmemory', ram: '17.125', cpu: '2', disk: '420', network: '10', price: '0.409'},
+    { id: '2_2', category: 'highmemory', ram: '34.25', cpu: '4', disk: '843', network: '10', price: '0.817'},
+    { id: '2_3', category: 'highmemory', ram: '68.375', cpu: '8', disk: '1122', network: '10', price: '1.630'},
+    { id: '3_1', category: 'highcpu', ram: '1.75', cpu: '2', disk: '75', network: '10', price: '0.127'},
+    { id: '3_2', category: 'highcpu', ram: '7', cpu: '7', disk: '263', network: '10', price: '0.508'},
+    { id: '3_3', category: 'highcpu', ram: '16', cpu: '16', disk: '600', network: '10', price: '1.160'},
+    { id: '4_1', category: 'highio', ram: '60.5', cpu: '8', disk: '1452', network: '10', price: '3.067'},
+    { id: '4_2', category: 'highio', ram: '128', cpu: '16', disk: '3072', network: '10', price: '6.488'},
+    { id: '4_3', category: 'highio', ram: '256', cpu: '32', disk: '6144', network: '10', price: '12.976'}
+];
+
+var getCategories = function () {
+    return categories;
+};
+
+var getInstances = function () {
+    return instances;
+};
+
+return {
+    getCategories: getCategories,
+    getInstances: getInstances
+}
+</code></pre>
+<p>});<br />
+[/js]</p>
+<h2>The Layout Take One</h2>
+<p>Now that we have our data in place, we can lay out our menu by using an <strong>ng-repeat</strong> to iterate over the <strong>categories</strong> and within that iteration using another <strong>ng-repeat</strong> to iterate over the instances. A word of advice before we go any further: nesting two <strong>ng-repeat</strong> directives on highly dynamic data structures could have performance ramifications so be judicious about where you do this. Because our two collections are not going to change over the course of the application, it is a design choice I am comfortable with.</p>
+<p>{% highlight html %}</p>
+<div class="container">
+<div class="row">
+<div class="col-md-2 column">
+<div class="header {{category.name}}">
+<h2>{{category.display}}</h2>
+</p></div>
+<div class="instance clearfix">
+<div class="left pph">${{instance.price}} per hour</div>
+<div class="right">
+<ul>
+<li>{{instance.ram}} GIB</li>
+<li>{{instance.cpu}} vCPU</li>
+<li>{{instance.disk}} GB</li>
+<li>{{instance.network}} Gbit/s</li>
+</ul></div>
+</p></div>
+</p></div>
+</p></div>
+</div>
+<p>{% endhighlight %}</p>
+<p>At this point, we will have a column for every category and a row for every instance regardless of the category the instance belongs to.</p>
+<p><img class="alignnone wp-image-883 size-full" src="{{ site.baseurl }}/img/joyent-menu-take-1.png" alt="Joyent Menut Take One" width="715" height="1024" /></p>
+<h2>The Layout Take Two</h2>
+<p>For each <strong>category</strong>, we really only want a subset of the <strong>instances</strong> array that matches the <strong>category</strong> we are in. Returning a subset of an array is precisely what filters were designed for.</p>
+<p>{% highlight html %}</p>
+<div class="instance clearfix" ng-repeat="instance in instances | filter:{category:category.name}">
+    <!-- OMMITTED -->
+</div>
+<p>{% endhighlight %}</p>
+<p>On our inner <strong>ng-repeat</strong> we are going to filter the instances collection by adding <strong>| filter:{category:category.name}</strong> to the end of it. This is essentially telling AngularJS to return only the <strong>instances</strong> where the <strong>category</strong> property matches the <strong>name</strong> of the current <strong>category</strong> i.e. <strong>category.name</strong> in the parent iteration.</p>
+<p>Now we end up with something quite a bit more useful.</p>
+<p><img class="alignnone wp-image-882 size-full" src="{{ site.baseurl }}/img/joyent-menu.png" alt="joyent-menu" width="1024" height="460" /></p>
+<h2>Dynamic Dynamic Classes</h2>
+<p>Because AngularJS not only binds to simple values but also expressions, we can do some really interesting things in our templates. We are going to diverge from the original Joyent menu and add in the ability to select an instance item and dynamically apply a dynamic class to indicate it is the active instance.</p>
+<p>We need to be able to keep track of our current instance and also have the ability to know if an instance is the current instance. We will create a property on <strong>$scope</strong> called <strong>currentInstance</strong> to keep track of the current instance and a method called <strong>setCurrentInstance</strong> to update <strong>currentInstance</strong>.</p>
+<p>[js]<br />
+angular.module('website', ['ngAnimate'])<br />
+    .controller('MainCtrl', function ($scope, $window, InstanceService) {<br />
+        $scope.categories = InstanceService.getCategories();<br />
+        $scope.instances = InstanceService.getInstances();</p>
+<pre><code>    $scope.currentInstance = null;
+
+    $scope.setCurrentInstance = function (instance) {
+        $scope.currentInstance = instance;
+    };
+
+    $scope.isCurrentInstance = function (instance) {
+        return $scope.currentInstance === instance;
+    };
+
+})
+</code></pre>
+<p>[/js]</p>
+<p>Then we have a method called <strong>isCurrentInstance</strong> that returns <strong>true</strong> or <strong>false</strong> depending on whether or not the <strong>instance</strong> parameter equals <strong>$scope.currentInstance</strong>.</p>
+<p>I have also created a CSS class for each category that represents a border color that matches that category's color theme.</p>
+<p>[css]<br />
+.current-standard {<br />
+    border: 1px solid #457b97;<br />
+}</p>
+<p>.current-highmemory {<br />
+    border: 1px solid #727372;<br />
+}</p>
+<p>.current-highcpu {<br />
+    border: 1px solid #a66a48;<br />
+}</p>
+<p>.current-highio {<br />
+    border: 1px solid #f60;<br />
+}<br />
+[/css]</p>
+<p>Notice that the classes follow the pattern of <strong>current-CATEGORY_NAME</strong>... could I be going somewhere with this? Yes I am!</p>
+<p>First, we are going to set <strong>currentInstance</strong> by calling <strong>setCurrentInstance</strong> on <strong>ng-click</strong> and passing in the <strong>instance</strong> that was clicked. Then we will dynamically attach the <strong>current-{{category.name}}</strong> class if <strong>isCurrentInstance(instance)</strong> returns <strong>true</strong>. The <strong>current-{{category.name}}</strong> class? That's right! That expression gets evaluated just like everything else and becomes <strong>current-standard</strong>, <strong>current-highmemory</strong>, etc.</p>
+<p>{% highlight html %}</p>
+<div class="instance clearfix" ng-repeat="instance in instances | filter:{category:category.name}" ng-click="setCurrentInstance(instance)" ng-class="{'current-{{category.name}}':isCurrentInstance(instance)}">
+    <!-- OMMITTED -->
+</div>
+<p>{% endhighlight %}</p>
+<p>The end result is that a border that matches the category's theme gets dynamically applied. Neat!</p>
+<p><img class="alignnone wp-image-884 size-full" src="{{ site.baseurl }}/img/joyent-menu-item.png" alt="Joyent Menu Item" width="420" height="228" /></p>
+<h2>Comparing Features</h2>
+<p><img src="{{ site.baseurl }}/img/joyent-menu-selected.png" alt="Joyent Menu Selected" width="821" height="152" class="alignnone size-full wp-image-885" /></p>
+<p>And now for the grand finale – giving emphasis to the active feature across the different instances. We are going to start out very similar to how we tracked the current instance by creating a <strong>currentInstanceFeature</strong> on <strong>$scope</strong>. We are going to initialize it to <strong>null</strong> since there isn't a current feature until the user interacts with the menu.</p>
+<p>[js]<br />
+angular.module('website', ['ngAnimate'])<br />
+    .controller('MainCtrl', function ($scope, $window, InstanceService) {<br />
+        $scope.categories = InstanceService.getCategories();<br />
+        $scope.instances = InstanceService.getInstances();</p>
+<pre><code>    //... OMITTED
+    $scope.currentInstanceFeature = null;
+
+    $scope.setCurrentInstanceFeature = function (feature) {
+        $scope.currentInstanceFeature = feature;
+    };
+
+    $scope.isMuted = function (feature) {
+        return $scope.currentInstanceFeature !== null
+            &amp;&amp; $scope.currentInstanceFeature !== feature;
+    };
+})
+</code></pre>
+<p>[/js]</p>
+<p>We will create a setter method called <strong>setCurrentInstanceFeature</strong> to set <strong>currentInstanceFeature</strong> depending on the user's interaction. The <strong>isMuted</strong> method is designed to return <strong>true</strong> if there <strong>IS</strong> a <strong>currentInstanceFeature</strong> and <strong>feature</strong> is <strong>NOT</strong> it.</p>
+<p>The point of this is realized when <strong>ng-class</strong> attaches the <strong>mute</strong> class to an element if it is not a member of the current feature. We set the current feature via <strong>ng-mouseenter</strong> and set it to <strong>null</strong> via <strong>ng-mouseleave</strong>.</p>
+<p>{% highlight html %}</p>
+<ul>
+<li ng-mouseenter="setCurrentInstanceFeature('ram')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('ram')}">
+        {{instance.ram}} <span>GIB</span></li>
+<li ng-mouseenter="setCurrentInstanceFeature('cpu')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('cpu')}">
+        {{instance.cpu}} <span>vCPU</span></li>
+<li ng-mouseenter="setCurrentInstanceFeature('disk')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('disk')}">
+        {{instance.disk}} <span>GB</span></li>
+<li ng-mouseenter="setCurrentInstanceFeature('network')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('network')}">
+        {{instance.network}} <span>Gbit/s</span></li>
+</ul>
+<p>{% endhighlight %}</p>
+<p>And in the CSS we are giving the muted features an opacity of 20% or 0.2.</p>
+<p>[css]<br />
+.mute,<br />
+{<br />
+    opacity: 0.2;<br />
+}<br />
+[/css]</p>
+<h2>And Just for Fun</h2>
+<p>We can also add a little something extra to the menu with our good friend <strong>ngAnimate</strong>. We will define our animation with the <strong>highlight-animation</strong> class and use the adding and removing of the <strong>mute</strong> class as our event trigger.</p>
+<p>{% highlight html %}</p>
+<ul>
+<li ng-mouseenter="setCurrentInstanceFeature('ram')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('ram')}" class="highlight-animation">
+        {{instance.ram}} <span>GIB</span></li>
+<li ng-mouseenter="setCurrentInstanceFeature('cpu')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('cpu')}" class="highlight-animation">
+        {{instance.cpu}} <span>vCPU</span></li>
+<li ng-mouseenter="setCurrentInstanceFeature('disk')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('disk')}" class="highlight-animation">
+        {{instance.disk}} <span>GB</span></li>
+<li ng-mouseenter="setCurrentInstanceFeature('network')" ng-mouseleave="setCurrentInstanceFeature(null)" ng-class="{mute:isMuted('network')}" class="highlight-animation">
+        {{instance.network}} <span>Gbit/s</span></li>
+</ul>
+<p>{% endhighlight %}</p>
+<p>And in our CSS, we define the base transition for <strong>.highlight-animation.mute-add</strong> and <strong>.highlight-animation.mute-remove</strong> classes to last <strong>.4</strong> seconds and transition in a <strong>linear</strong> fashion over <strong>all</strong> properties.</p>
+<p>[css]<br />
+.highlight-animation.mute-add,<br />
+.highlight-animation.mute-remove {<br />
+    transition: 0.4s linear all;<br />
+}</p>
+<p>.highlight-animation.mute-add,<br />
+.highlight-animation.mute-remove.mute-remove-active {<br />
+    opacity: 1;<br />
+}</p>
+<p>.highlight-animation.mute,<br />
+.highlight-animation.mute-remove,<br />
+.highlight-animation.mute-add.mute-add-active {<br />
+    opacity: 0.2;<br />
+}<br />
+[/css]</p>
+<p>From here, we are telling ngAnimate to start with an <strong>opacity</strong> of 100% when <strong>mute</strong> is added and end with a 20% opacity when it has been actively applied. We are also doing the same thing in reverse when <strong>mute</strong> is removed. We start at 20% opacity and end with 100% opacity when it has been actively removed.</p>
+<blockquote><p>
+Using ngAnimate comes down to understanding the convention that it uses. For a ton of great examples, check out Matias Niemela's blog post on animations <a href="http://www.yearofmoo.com/2013/08/remastered-animation-in-angularjs-1-2.html" title="AngularJS Animations" target="_blank">here</a>. He knows stuff!
+</p></blockquote>
+<h2>Review</h2>
+<p>Just a quick review before we give each other a high five call it a day.</p>
+<ul>
+<li>We can layout a grid of items using a nested <strong>ng-repeat</strong></li>
+<li>We can limit the items shown in the inner <strong>ng-repeat</strong> by using a <strong>filter</strong></li>
+<li>Be judicious about using the above technique and prefer static structures over highly dynamic structures</li>
+<li>Because AngularJS binds to expressions, we can dynamically set a dynamically defined class and it is awesome!</li>
+<li>Using simple, applicative functions such as <strong>isMuted</strong> it is really easy to control the state of the view.</li>
+<li><strong>ngAnimate</strong> is super!</li>
+</ul>
+<p>And here is the view in its entirety. Not bad for like forty lines of HTML!</p>
+<p>{% highlight html %}</p>
+<div class="container">
+<div class="row">
+<div class="col-md-2 column" ng-repeat="category in categories">
+<div class="header {{category.name}}">
+<h2>{{category.display}}</h2>
+</p></div>
+<div class="instance clearfix" ng-repeat="instance in instances | filter:{category:category.name}" ng-click="setCurrentInstance(instance)" ng-class="{'current-{{category.name}}':isCurrentInstance(instance)}">
+<div class="left pph">
+                    ${{instance.price}}<br /><span>per hour</span>
+                </div>
+<div class="right">
+<ul>
+<li ng-mouseenter="setCurrentInstanceCategory('ram')" ng-mouseleave="setCurrentInstanceCategory(null)" ng-class="{mute:isMuted('ram')}" class="highlight-animation">
+                            {{instance.ram}} <span>GIB</span></li>
+<li ng-mouseenter="setCurrentInstanceCategory('cpu')" ng-mouseleave="setCurrentInstanceCategory(null)" ng-class="{mute:isMuted('cpu')}" class="highlight-animation">
+                            {{instance.cpu}} <span>vCPU</span></li>
+<li ng-mouseenter="setCurrentInstanceCategory('disk')" ng-mouseleave="setCurrentInstanceCategory(null)" ng-class="{mute:isMuted('disk')}" class="highlight-animation">
+                            {{instance.disk}} <span>GB</span></li>
+<li ng-mouseenter="setCurrentInstanceCategory('network')" ng-mouseleave="setCurrentInstanceCategory(null)" ng-class="{mute:isMuted('network')}" class="highlight-animation">
+                            {{instance.network}} <span>Gbit/s</span></li>
+</ul></div>
+</p></div>
+</p></div>
+</p></div>
+</div>
+<p>{% endhighlight %}</p>
+<h2>One more thing...</h2>
+<blockquote><p>
+Is there something that you are struggling with in AngularJS? Something you would like to learn about? Comment below and let me know!
+</p></blockquote>
+<h2>Resources</h2>
+<p><a title="Joyent" href="https://www.joyent.com/products/compute-service/pricing" target="_blank">The menu that started it all</a></p>
+<p><a title="Remastered Animation in AngularJS 1.2" href="http://www.yearofmoo.com/2013/08/remastered-animation-in-angularjs-1-2.html" target="_blank">Remastered Animation in AngularJS 1.2</a></p>
+<p>[button link="http://onehungrymind.com/demos/joyent/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-pricing-menu" size="large" window="yes"]Code[/button]</p>

@@ -1,0 +1,582 @@
+---
+layout: post
+title: Build a Better Angular 2 Application with Redux and ngrx
+date: 2016-02-03 18:13:50.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Angular 2
+- JavaScript
+- Programming
+- redux
+tags:
+- angular
+- angular2
+- redux
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '1180'
+  _yoast_wpseo_primary_category: ''
+  _yoast_wpseo_content_score: '30'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Evolution of Angular State Management</h2>
+<p>State management within Angular started out as a single celled organism if you will in the form of a single controller managing all the state for the application. If this is a single page application, one controller makes sense right? We emerged out of the ice age by starting to group our views and controllers into smaller, self-contained units either within a directive or a route. This was a vast improvement, but there was still the problem of managing complex state within our applications. It was not uncommon for us to have bits and pieces of state strewn across our application tucked inside of controllers, services, routes, directives, and occasionally, in our templates. Mutable state in itself is not inherently evil but shared mutable state is a recipe for disaster.</p>
+<p><img src="{{ site.baseurl }}/img/ng-state-everwhere.png" alt="State Everywhere" width="400" height="268" class="aligncenter size-full wp-image-1162" /></p>
+<p>Just as modern web frameworks like Angular permanently altered our jQuery-centric approach to app development, React has fundamentally changed the way that we approach state-management while using modern web frameworks. Redux is front and center of this shift as it introduced an elegant, yet profoundly simple way to manage application state. It is worth mentioning, Redux (big R) is a library but more importantly it is a design pattern (little r) that is completely framework agnostic and coincidentally works really well with Angular.</p>
+<blockquote>
+<h3>Required Viewing</h3>
+<p>This entire post was inspired by the <strong>amazing</strong> <a href="https://egghead.io/series/getting-started-with-redux" target="_blank">Egghead.io - Getting Started with Redux</a> series by <a href="https://twitter.com/dan_abramov" target="_blank">Dan Abramov</a>. There is no better way to learn Redux than by having its creator explain it to you. It is 100% free and has changed the way that I approach programming in general.
+</p></blockquote>
+<p>The beauty of redux is that it can be articulated in just a few sentences. In fact, my "ah ha!" moment could be summarized in three main points.</p>
+<h3>Single State Tree</h3>
+<p><img src="{{ site.baseurl }}/img/ngrx-single-state-tree-v2-resized.png" alt="Single State Tree" class="aligncenter" /></p>
+<p>The fundamental premise of redux is that the entire state of the application is represented in a <strong>single</strong> JavaScript object called a <strong>store</strong>, or <strong>application store</strong>, that can be acted upon using special functions called <strong>reducers</strong>. Equally important is that state is <strong>immutable</strong> and reducers are the <em>only</em> part of the application that can change them. As you can see in the graphic above, the store is the center of the appliation universe.</p>
+<p>The consolidation and immutability of state makes understanding and predicting how an application will behave exponentially easier.</p>
+<h3>Events Flow Up</h3>
+<p><img src="{{ site.baseurl }}/img/ngrx-events-up-v2-resized.png" alt="Events Up" class="aligncenter" /></p>
+<p>In redux, user events are captured and emitted up to a <strong>reducer</strong> for processing. In Angular 1.x, it was a very common anti-pattern to see bloated controllers with large chunks of logic dedicated to manage local state. By moving logic that can directly manipulate state to reducers, the burden placed upon our components become negligible. In Angular 2, you will often see dumb controllers who do nothing more than capture an event and emit it via <strong>output</strong> to its parent controller.</p>
+<p>In the graphic above, you will see two events flows. One is an event being emitted from a child component to its parent component and then onto the reducer. The second flow is an event being emitted to a service to perform an asynchronous operation and then the result of that being emitted into the reducer. All roads lead to the reducer.</p>
+<h3>State Flows Down</h3>
+<p><img src="{{ site.baseurl }}/img/ngrx-state-down-v2-resized.png" alt="State Down" class="aligncenter" /></p>
+<p>While events flow up, state flows down from the parent component to its children components. Angular 2 makes this really easy by declaring <strong>input</strong> on a child component for the parent component to pass state to it. This has some serious implications in terms of change detection which we will get into in a bit.</p>
+<h3>@ngrx/store</h3>
+<p><img src="{{ site.baseurl }}/img/ngrx-hooray.png" alt="NGRX Hooray" width="200" height="187" class="aligncenter size-full wp-image-1166" /></p>
+<p>The icing on the cake is that state moving through an Angular 2 application is exponentially easier with the introduction of observables and the <strong>async</strong> pipe. My buddy <a href="https://twitter.com/robwormald" target="_blank">Rob Wormald</a> created an awesome Redux implementation using <strong>RxJS</strong> called <a href="https://github.com/ngrx/store" target="_blank">@ngrx/store</a>. This gives us all the power of Redux combined with the power of observables which makes for a very, very powerful stack.</p>
+<h3>The Sample Application</h3>
+<p><img src="{{ site.baseurl }}/img/ngrx-rest-app-v2.png" alt="NGRX App Demo" width="75%" class="aligncenter" /></p>
+<p>We are going to be building out a simple master-detail REST application that lists a collection of items and then we can select an item and edit it or create a new item. To illustrate how <strong>@ngrx/store</strong> works with asynchronous operations, we are going to use <strong>json-server</strong> to provide use a REST API for use to consume with the Angular 2 <strong>http</strong> service. If you want to see a simplified version of the application, you can check out the <strong>simple-data-flow</strong> branch to skip the HTTP calls.</p>
+<p>Grab the code and let's get started!</p>
+<p>[button link="https://github.com/onehungrymind/fem-ng2-ngrx-app" size="large" window="yes"]Code[/button]</p>
+<h2>Laying the Foundation</h2>
+<p>We are going to cover a lot of ground over the course of this lesson, and so we will do our best to take baby steps along the way. There is always the initial phase of a new concept where you have to lay some groundwork before you can start to expound on specific components. In this section, we are going to build out just enough Angular to give us the space to start talking about redux and ngrx in the context of a working application. Don't get too hung up on the particulars just yet as we will revisit everything more than once to fortify the ideas we are covering.</p>
+<h3>Reducers Take One</h3>
+<p>To facilitate our master-detail interface, we need to manage an array of items as well as the currently selected item. We will use <strong>@ngrx/store</strong> to provide use with a <strong>store</strong> for us to well... store our state.</p>
+<p>To manage our application state, we need to kick things off by creating our <strong>items</strong> and <strong>selectedItem</strong> reducers. A traditional reducer is nothing more than a function that takes a state object and an action to perform. Our ngrx reducer is slightly different in that the second parameter is an object with the <strong>type</strong> of action to perform and the <strong>payload</strong> for that action. We can also set the default value for the state to ensure that everything initializes smoothly.</p>
+<p>[js]<br />
+// The "items" reducer performs actions on our list of items<br />
+export const items = (state: any = [], {type, payload}) => {<br />
+  switch (type) {<br />
+    default:<br />
+      return state;<br />
+  }<br />
+};<br />
+[/js]</p>
+<p>We will build our reducers out to handle specific actions but for now, we are going to set the <strong>default</strong> state of the <strong>switch</strong> statement to just return <strong>state</strong>. The code snippet above and below are almost identical except that one is the <strong>items</strong> reducer and the other is the <strong>selectedItem</strong> reducer. Seeing them side by side makes it easier to identify the underlying pattern when creating reducers.</p>
+<p>[js]<br />
+// The "selectedItem" reducer handles the currently selected item<br />
+export const selectedItem = (state: any = null, {type, payload}) => {<br />
+  switch (type) {<br />
+    default:<br />
+      return state;<br />
+  }<br />
+};<br />
+[/js]</p>
+<p>Making an interface for the application store really helped me to understand how reducers fit into the application. In our <strong>AppStore</strong> interface, you can see that we are dealing with a single object that has an <strong>items</strong> collection and a <strong>selectedItem</strong> property which holds a single <strong>Item</strong> object.</p>
+<p>[js]<br />
+export interface AppStore {<br />
+  items: Item[];<br />
+  selectedItem: Item;<br />
+}<br />
+[/js]</p>
+<p>If we needed to add additional functionality, the store would just expand with new key value pairs to accommodate the updated model.</p>
+<h3>Inject the Store</h3>
+<p>Now that our reducers have been defined, we need to make them available by adding them to our application store and then injecting that into our application. The first step is to import <strong>items</strong>, <strong>selectedItem</strong> and <strong>provideStore</strong> into our application. The <strong>provideStore</strong> is appropriately named in that it provides us with an application store to use for the life-cycle of the application.</p>
+<p>We initialize our store by calling <strong>provideStore</strong> and passing in an object that contains our <strong>items</strong> and <strong>selectedItem</strong> reducers. Notice that we are passing in an object that matches our <strong>AppStore</strong> interface.<br />
+We then make the store available to our entire application by defining it as an application dependency when we call <strong>bootstrap</strong> to initialize our application.</p>
+<p>[js]<br />
+import {bootstrap} from 'angular2/platform/browser';<br />
+import {App} from './src/app';<br />
+import {provideStore} from '@ngrx/store';<br />
+import {ItemsService, items, selectedItem} from './src/items';</p>
+<p>bootstrap(App, [<br />
+  ItemsService, // The actions that consume our store<br />
+  provideStore({items, selectedItem}) // The store that defines our app state<br />
+])<br />
+.catch(err => console.error(err));<br />
+[/js]</p>
+<p>You may have noticed that we are also importing and injecting <strong>ItemsService</strong>; we will define it next as it will be the primary consumer of our newly minted store.</p>
+<h3>Create the Items Service</h3>
+<p>The first and simplest iteration of our <strong>ItemsService</strong> will expose the <strong>items</strong> collection by pulling it from the store. Notice that we have typed our <strong>items</strong> collection as an <strong>Observable</strong> that contains an <strong>Array</strong> of <strong>Item</strong> objects. The benefits of having our array wrapped in an observable will become clearer once we start to consume the collection in our components. We are also injecting our store into our constructor and typing it to the <strong>AppStore</strong> interface that we declared earlier.</p>
+<p>[js]<br />
+@Injectable()<br />
+export class ItemsService {<br />
+  items: Observable&lt;Array<item>>;<br />
+  constructor(private store: Store<appstore>) {<br />
+    this.items = store.select('items'); // Bind an observable of our items to "ItemsService"<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>Because we are basically dealing with a key-value store, we can set <strong>this.items</strong> by calling <strong>store.select(items')</strong>. The <strong>select</strong> method returns an observable with our collection in it.</p>
+<p><strong>Important!</strong> The reason that I have created a service to pull the <strong>items</strong> collection from the <strong>store</strong> is because we are going to introduce asynchronous operations when we start to wire everything up to talk to our remote API. This abstraction allows us to accommodate some potentially complex async operations before handing everything off to the reducer for processing.</p>
+<h3>Consume the Items</h3>
+<p>Now that we have created the <strong>ItemsService</strong> that has an <strong>items</strong> collection available, we will consume it in our <strong>App</strong> component. Just like in the <strong>ItemsService</strong>, we will declare our <strong>items</strong> collection as <strong>items: Observable&lt;Array&lt;Item&gt;></strong>. While we are at it, we will also define our <strong>selectedItem</strong> as an observable that contains a single <strong>Item</strong> object.</p>
+<p>[js]<br />
+export class App {<br />
+  items: Observable&lt;Array<item>>;<br />
+  selectedItem: Observable<item>;<br />
+  constructor(private itemsService: ItemsService, private store: Store<appstore>) {<br />
+    this.items = itemsService.items; // Bind to the "items" observable on the "ItemsService"<br />
+    this.selectedItem = store.select('selectedItem'); // Bind the "selectedItem" observable from the store<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>To set <strong>this.items</strong>, we will assign it the <strong>items</strong> collection from the <strong>ItemsService</strong> and to set <strong>this.selectedItem</strong>, we will fetch it directly from our <strong>store</strong> by calling <strong>store.select('selectedItem')</strong>. If you recall, I created the <strong>ItemsService</strong> to abstract our asynchronous operations when dealing with the <strong>items</strong> collection. Managing <strong>selectedItem</strong> is completely synchronous in nature and so I could not justify creating a <strong>SelectedItemService</strong> for it. This is why I am using <strong>ItemsService</strong> when dealing with <strong>items</strong> but deal with the <strong>store</strong> directly when getting <strong>selectedItem</strong> state. You could create a service to handle this for the sake of symmetry and that would be completely justified.</p>
+<h3>Display the Items</h3>
+<p>Angular 2 is designed for the creation and composition of small specific components. Our application has two sub-components called <strong>ItemsList</strong> and <strong>ItemDetail</strong> which are responsible for listing all items and displaying the details of the selected item, respectively.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'my-app',<br />
+  providers: [],<br />
+  template: HTML_TEMPLATE,<br />
+  directives: [ItemList, ItemDetail],<br />
+  changeDetection: ChangeDetectionStrategy.OnPush<br />
+})<br />
+[/js]</p>
+<blockquote><p>
+My syntax highlighter does not handle inline templates very well which is why I have separated them out into two separate code blocks. In practice, I recommend keeping your components fine-grained enough that it is easy to inline your templates. A really large HTML snippet probably means that you are doing too much.
+</p></blockquote>
+<p>In the <strong>my-app</strong> template, we are initializing the <strong>items-list</strong> component with a property binding to <strong>items</strong> that is bound to our local <strong>items</strong> collection. This is similar to isolated scope in Angular 1.x in that we are creating a defined input on the child component with <strong>[items]</strong> and then binding it to the value of whatever the <strong>items</strong> collection happens to be on the parent component. Because we are dealing with observables, we can bypass a lot of boilerplate by using the <strong>async</strong> pipe to pass the updated values directly to our inputs without having to extract them. By "boilerplate", I am referring to a common Angular 1.x scenario where we could call a service in our controller and when the promise resolved, we would take the results and assign it to a property we were binding to. In Angular 2, we skip this step entirely by allowing the pipe to assign the asynchronous to our template for us.</p>
+<p>{% highlight html %}</p>
+<div>
+  <items-list [items]="items | async">
+</div>
+<div>
+  <item-detail [item]="selectedItem | async">
+</div>
+<p>{% endhighlight %}</p>
+<p>We will follow the same pattern for the <strong>selectedItem</strong> by passing it to the <strong>item-detail</strong> component as <strong>item</strong>. We have now laid the foundation for our application, and now the stage is set for us to dig into the three main features of data flow in a redux application.</p>
+<h2>Centralized State</h2>
+<p><img src="{{ site.baseurl }}/img/ngrx-centralized-state.png" alt="NGRX Centralized State" width="352" height="119" class="aligncenter size-full wp-image-1168" /></p>
+<p>To reiterate, the single most important concept within redux is that the entire state of your application is centralized into a single JavaScript object tree. This is, in my opinion, the largest shift from how we <em>used</em> to write Angular applications to where we are now. We manage our application state through a reducer function which takes the original state and an action, performs a unit of logic based on the particular action and returns a <strong>new</strong> state object. We will build out our children components to display <strong>items</strong> and <strong>selectedItem</strong> and keep an eye out for the fact that they are being populated by this master, single state tree.</p>
+<p>Our reducers are the only thing that can modify application state and so we will start out with the <strong>selectedItem</strong> reducer since it is by far the simplest of the two we have in our application. When an event is dispatched from the store with an action type of <strong>SELECT_ITEM</strong>, it will hit the first condition in the switch statement and return the payload as the new state. In plain English, we are telling our reducer to "take this new item and assign it as the currently selected item." Also, actions are customarily strings that are all in caps and often times defined as application constants.</p>
+<p>[js]<br />
+export const selectedItem = (state: any = null, {type, payload}) => {<br />
+  switch (type) {<br />
+    case 'SELECT_ITEM':<br />
+      return payload;<br />
+    default:<br />
+      return state;<br />
+  }<br />
+};<br />
+[/js]</p>
+<p>Because our object state tree is read-only, our response for every action must return a new state object without mutating the previous state object. Enforcing immutability in our reducers is critical when implementing redux and so will step through each action below and discuss how we can accomplish this.</p>
+<p>[js]<br />
+export const items = (state: any = [], {type, payload}) => {<br />
+  switch (type) {<br />
+    case 'ADD_ITEMS':<br />
+      return payload;<br />
+    case 'CREATE_ITEM':<br />
+      return [...state, payload];<br />
+    case 'UPDATE_ITEM':<br />
+      return state.map(item => {<br />
+        return item.id === payload.id ? Object.assign({}, item, payload) : item;<br />
+      });<br />
+    case 'DELETE_ITEM':<br />
+      return state.filter(item => {<br />
+        return item.id !== payload.id;<br />
+      });<br />
+    default:<br />
+      return state;<br />
+  }<br />
+};<br />
+[/js]</p>
+<p><strong>ADD_ITEMS</strong> returns whatever collection we send in as the new array.</p>
+<p><strong>CREATE_ITEM</strong> returns a new array by concatenating the existing items array with our new item.</p>
+<p><strong>UPDATE_ITEM</strong> returns a new array by mapping through the current array, finding the item we want to update and cloning a new object using <strong>Object.assign</strong>.</p>
+<p><strong>DELETE_ITEM</strong> returns a new array by filtering out the item that we want to delete.</p>
+<p>By centralizing our state into a single state tree and then grouping the code that operates on our tree into reducers makes our application so much easier to reason about. Another benefit is that by having our logic segmented into pure units within our reducer, this makes testing our application very easy.</p>
+<h2>State Down Interlude</h2>
+<p>Just to give a preview of how this data flow is connected, let us take a look at our <strong>ItemsService</strong> and see how we can initiate an action on our <strong>items</strong> reducer. We will eventually replace the <strong>loadItems</strong> method with an HTTP call but for now, we will just assume that we are hard coding some sample items and assigning it to the <strong>initialItems</strong> array. To execute an action, we will call <strong>this.store.dispatch</strong> and pass in our actions object with a type of <strong>ADD_ITEMS</strong> and a payload of <strong>initialItems</strong>.</p>
+<p>[js]<br />
+@Injectable()<br />
+export class ItemsService {<br />
+  items:Observable &lt;Array<item>>;<br />
+  constructor(private store:Store<appstore>) {<br />
+    this.items = store.select('items');<br />
+  }<br />
+  loadItems() {<br />
+    let initialItems:Item[] = [<br />
+      // ITEM OBJECTS HERE<br />
+    ];<br />
+    this.store.dispatch({type: 'ADD_ITEMS', payload: initialItems});<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>The interesting thing is that every time we dispatch the <strong>ADD_ITEMS</strong> event, our local <strong>items</strong> collection is automatically updated because it is being  via an observable. Because we are consuming <strong>items</strong> in our <strong>App</strong> component, it is automatically updated there as well. And if we were (and we are) passing that collection to the <strong>ItemsList</strong> component, it would automatically update at the subcomponent level as well.</p>
+<p>Redux is a great pattern for centralizing state management with immutable data structures. Add in observables and you now have an ultra-convenient way to move that state down through the application by binding directly to the stream of values provided by the observable.</p>
+<h2>State Down</h2>
+<p><img src="{{ site.baseurl }}/img/ngrx-state-down-concrete-resized.png" alt="NGRX State Down" class="aligncenter" /></p>
+<p>Another cornerstone of redux is that state always flows down. To illustrate this point, we will start with the <strong>App</strong> component and follow our <strong>items</strong> and <strong>selectedItem</strong> data down to the child components. We are populating <strong>items</strong> from the <strong>ItemsService</strong> (because it will eventually be an asynchronous operation) and pulling in <strong>selectedItem</strong> directly from the <strong>store</strong>.</p>
+<p>[js]<br />
+export class App {<br />
+  items: Observable&lt;Array<item>>;<br />
+  selectedItem: Observable<item>;<br />
+  constructor(private itemsService: ItemsService, private store: Store<appstore>) {<br />
+    this.items = itemsService.items;<br />
+    this.selectedItem = store.select('selectedItem');<br />
+    this.selectedItem.subscribe(v => console.log(v));<br />
+    itemsService.loadItems(); // "itemsService.loadItems" dispatches the "ADD_ITEMS" event to our store,<br />
+  }                           // which in turn updates the "items" collection<br />
+}<br />
+[/js]</p>
+<p>This is the only place in the entire application where those two properties are set. We will learn in a moment how to do some sleight of hand when we get to the <strong>ItemDetails</strong> component to localize state mutation but we never directly manipulate these values again. Conceptually, this is a huge shift from how we have approached Angular applications, and the implications are huge. <strong>We no longer need change detection if we are not directly mutating data within our component.</strong></p>
+<p>The <strong>App</strong> component takes <strong>items</strong> and <strong>selectedItem</strong> and hands them off via property bindings to its child components.</p>
+<p>{% highlight html %}</p>
+<div>
+  <items-list [items]="items | async">
+</div>
+<div>
+  <item-detail [item]="selectedItem | async">
+</div>
+<p>{% endhighlight %}</p>
+<p>In our <strong>ItemsList</strong> component, we pick up the <strong>items</strong> collection by annotating our local <strong>items</strong> property with <strong>@Input()</strong>.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'items-list',<br />
+  template: HTML_TEMPLATE<br />
+})<br />
+class ItemList {<br />
+  @Input() items: Item[];<br />
+}<br />
+[/js]</p>
+<p>And in the HTML template, we display it in the view using <strong>ngFor</strong> to loop over <strong>items</strong> and create a template for each one.</p>
+<p>{% highlight html %}</p>
+<div *ngFor="#item of items">
+<div>
+<h2>{{item.name}}</h2>
+</p></div>
+<div>
+    {{item.description}}
+  </div>
+<p>{% endhighlight %}</p>
+<p>The pattern is slightly more complicated in our <strong>ItemDetail</strong> component because we need to allow a user to create a new item or edit an existing item. You are going to ask the same question I did as I was learning redux. How can you edit an existing item without mutating it? Behold the sleight of hand! We will create a local copy of our item to work with so that we are not directly mutating our selected item. This has the added benefit of allowing us to cancel the operation without any side-effects.</p>
+<p>To accomplish this, we will modify our annotation slightly to assign our <strong>item</strong> input to a locally scoped <strong>_item</strong> property using <strong>@Input('item') _item: Item;</strong>. We can then leverage the power of ES6 and create a setter for <strong>_item</strong> and perform addtional logic everytime the object is updated. In our case, we are going to create a copy of <strong>_item</strong> using <strong>Object.assign</strong> and assign it to <strong>this.selectedItem</strong> which we will use to bind our form to. We are also going to create a property and store the name of the original item so that user is aware of what item they are currently working with. This is strictly motivated by the user experience but these little things make a big difference.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'item-detail',<br />
+  template: HTML_TEMPLATE<br />
+})<br />
+class ItemDetail {<br />
+  @Input('item') _item: Item;<br />
+  originalName: string;<br />
+  selectedItem: Item;<br />
+  // Every time the "item" input is changed, we copy it locally (and keep the original name to display)<br />
+  set _item(value: Item){<br />
+    if (value) this.originalName = value.name;<br />
+    this.selectedItem = Object.assign({}, value);<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>In our template, we are toggling the title that we show the user based on whether or not we are dealing with an existing component or new component by using <strong>ngIf</strong> to detect if <strong>selectedItem.id</strong> exists. We then have two inputs bound to <strong>selectedItem.name</strong> and <strong>selectedItem.description</strong> using <strong>ngModel</strong> and the two-way binding syntax.</p>
+<p>{% highlight html %}</p>
+<div>
+<div>
+<h2 *ngIf="selectedItem.id">Editing {{originalName}}</p>
+<h2 *ngIf="!selectedItem.id">Create New Item
+  </div>
+<div>
+<form novalidate>
+<div>
+        <label>Item Name</label><br />
+        <input [(ngModel)]="selectedItem.name"<br />
+               placeholder="Enter a name" type="text">
+      </div>
+<div>
+        <label>Item Description</label><br />
+        <input [(ngModel)]="selectedItem.description"<br />
+               placeholder="Enter a description" type="text">
+      </div>
+</p></form>
+</p></div>
+</div>
+<p>{% endhighlight %}</p>
+<p>And that is it! This has essentially been an exercise in taking data and passing it to the children components to display.</p>
+<h2>Events Up</h2>
+<p><img src="{{ site.baseurl }}/img/ngrx-events-up-concrete-resized.png" alt="NGRX Events Up" class="aligncenter" /></p>
+<p>The flip side to the "state down" maxim is that events always flow up. User interactions will trigger events that ultimately make its way to a reducer to be handled. The interesting thing about this approach is that your components suddenly become very lightweight and in most cases "dumb" in the sense that they perform zero logic. We could technically dispatch a reducer event within our children components but instead we are delegating that to the parent component to minimize dependencies in our components.</p>
+<p>Let's check out the <strong>ItemsList</strong> component without the template to see what I mean by this. We have a single input for our <strong>items</strong> array and then we have two event outputs we are emitting when an item is <strong>selected</strong> or <strong>deleted</strong>. That is the entire sum of the <strong>ItemsList</strong> class.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'items-list',<br />
+  template: HTML_TEMPLATE<br />
+})<br />
+class ItemList {<br />
+  @Input() items: Item[];<br />
+  @Output() selected = new EventEmitter();<br />
+  @Output() deleted = new EventEmitter();<br />
+}<br />
+[/js]</p>
+<p>In our template, we are calling <strong>selected.emit(item)</strong> when an item is clicked and calling <strong>deleted.emit(item)</strong> when the delete button is clicked. We are also calling <strong>$event.stopPropagation()</strong> when the delete button is clicked so that it doesn't trigger the selected event handler.</p>
+<p>{% highlight html %}</p>
+<div *ngFor="#item of items" (click)="selected.emit(item)">
+<div>
+<h2>{{item.name}}</h2>
+</p></div>
+<div>
+    {{item.description}}
+  </div>
+<div>
+    <button (click)="deleted.emit(item); $event.stopPropagation();"><br />
+      <i class="material-icons">close</i></p></div>
+<p>{% endhighlight %}</p>
+<p>By defining <strong>selected</strong> and <strong>deleted</strong> as component outputs, we can capture them in our parent component in the same way that we capture native DOM events like <strong>click</strong>. We see this in the code below as <strong>(selected)="selectItem($event)"</strong> and <strong>(deleted)="deleteItem($event)"</strong>. The <strong>$event</strong> parameter does not contain mouse information but rather the data that was sent with the event.</p>
+<p>{% highlight html %}</p>
+<div>
+  <items-list [items]="items | async"<br />
+    (selected)="selectItem($event)"<br />
+    (deleted)="deleteItem($event)"></p>
+</div>
+<p>{% endhighlight %}</p>
+<p>When those events are emitted, we then capture them and handle them in our parent component. In the case of selecting an item, we are going to dispatch a new event with the action <strong>type</strong> of <strong>SELECT_ITEM</strong> and set the <strong>payload</strong> to the item selected. When an item is deleted, we will just delegate that to the <strong>ItemsService</strong> to be handled.</p>
+<p>[js]<br />
+export class App {<br />
+  //...<br />
+  selectItem(item: Item) {<br />
+    this.store.dispatch({type: 'SELECT_ITEM', payload: item});<br />
+  }<br />
+  deleteItem(item: Item) {<br />
+    this.itemsService.deleteItem(item);<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>For now, we are just going to dispatch a new event on store within our service to pass the <strong>DELETE_ITEM</strong> action to the reducer with our deleted item in tow. We will replace this with HTTP calls in a moment.</p>
+<p>[js]<br />
+@Injectable()<br />
+export class ItemsService {<br />
+  items: Observable&lt;Array<item>>;<br />
+  constructor(private store: Store<appstore>) {<br />
+    this.items = store.select('items');<br />
+  }<br />
+  //...<br />
+  deleteItem(item: Item) {<br />
+    this.store.dispatch({ type: 'DELETE_ITEM', payload: item });<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>To reinforce what we have just learned, we will go through the <strong>ItemDetails</strong> component and follow the event flow up. We want to allow the user to save an item or cancel the operation and so we will define two outputs called <strong>saved</strong> and <strong>cancelled</strong>.</p>
+<p>[js]<br />
+class ItemDetail {<br />
+  //...<br />
+  @Output() saved = new EventEmitter();<br />
+  @Output() cancelled = new EventEmitter();<br />
+}<br />
+[/js]</p>
+<p>In the bottom of our form, we have a cancel button that calls <strong>cancelled.emit(selectedItem)</strong> on click and a save button that calls <strong>(click)="saved.emit(selectedItem)</strong>.</p>
+<p>{% highlight html %}</p>
+<div>
+  <!-- ... ---></p>
+<div>
+      <button type="button" (click)="cancelled.emit(selectedItem)">Cancel<br />
+      <button type="submit" (click)="saved.emit(selectedItem)">Save
+  </div>
+</div>
+<p>{% endhighlight %}</p>
+<p>In our main component, we then bind to the <strong>saved</strong> and <strong>cancelled</strong> outputs to call the event handlers in our class.</p>
+<p>{% highlight html %}</p>
+<div>
+  <items-list [items]="items | async"<br />
+    (selected)="selectItem($event)"<br />
+    (deleted)="deleteItem($event)"></p>
+</div>
+<div>
+  <item-detail [item]="selectedItem | async"<br />
+    (saved)="saveItem($event)"<br />
+    (cancelled)="resetItem($event)"></p>
+</div>
+<p>{% endhighlight %}</p>
+<p>When a user clicks the cancel button, we create an empty item and emit a <strong>SELECT_ITEM</strong> action. When an item is saved, we call <strong>saveItem</strong> on <strong>ItemsService</strong> and then reset the form..</p>
+<p>[js]<br />
+export class App {<br />
+  //...<br />
+  resetItem() {<br />
+    let emptyItem: Item = {id: null, name: '', description: ''};<br />
+    this.store.dispatch({type: 'SELECT_ITEM', payload: emptyItem});<br />
+  }<br />
+  saveItem(item: Item) {<br />
+    this.itemsService.saveItem(item);<br />
+    this.resetItem();<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>Originally, I wrestled with having a form for creating an item and then a separate form for editing an item. This seemed a bit heavy and so I opted to share the same form since both exist to save an item. I then approximate <em>upsert</em> functionality in the <strong>itemSave</strong> method by detecting the presence of <strong>item.id</strong> and calling either <strong>createItem</strong> or <strong>updateItem</strong>. Both methods take the item we send  and dispatch it with the proper event. By now, I hope that the pattern of how we deliver objects to a reducer for processing is starting to emerge.</p>
+<p>[js]<br />
+@Injectable()<br />
+export class ItemsService {<br />
+  items: Observable&lt;Array<item>>;<br />
+  constructor(private store: Store<appstore>) {<br />
+    this.items = store.select('items');<br />
+  }<br />
+  //...<br />
+  saveItem(item: Item) {<br />
+    (item.id) ? this.updateItem(item) : this.createItem(item);<br />
+  }<br />
+  createItem(item: Item) {<br />
+    this.store.dispatch({ type: 'CREATE_ITEM', payload: this.addUUID(item) });<br />
+  }<br />
+  updateItem(item: Item) {<br />
+    this.store.dispatch({ type: 'UPDATE_ITEM', payload: item });<br />
+  }<br />
+  //...<br />
+  // NOTE: Utility functions to simulate server generated IDs<br />
+  private addUUID(item: Item): Item {<br />
+    return Object.assign({}, item, {id: this.generateUUID()}); // Avoiding state mutation FTW!<br />
+  }<br />
+  private generateUUID(): string {<br />
+    return ('' + 1e7 + -1e3 + -4e3 + -8e3 + -1e11)<br />
+      .replace(/1|0/g, function() {<br />
+        return (0 | Math.random() * 16).toString(16);<br />
+      });<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>We have just completed the "state down, events up" circuit but our example still lives in a vacuum. How hard would it be to modify our application to communicate with a real server? The answer is "not hard at all!".</p>
+<h2>Calling All Servers</h2>
+<p>First, a bit of setup to prepare our application to make HTTP calls. We will import <strong>Http</strong> and <strong>Headers</strong> from <strong>angular2/http</strong>.</p>
+<p>[js]<br />
+import {Http, Headers} from 'angular2/http';<br />
+[/js]</p>
+<p>We will then define a <strong>BASE_URL</strong> constant so we only have to type it once and we will also create a <strong>HEADER</strong> constant to tell our server how we are communicating with it. <em>This may not be necessary depending on what backend you are using but to get <strong>json-server</strong> working, I had to add it</em>.</p>
+<p>[js]<br />
+const BASE_URL = 'http://localhost:3000/items/';<br />
+const HEADER = { headers: new Headers({ 'Content-Type': 'application/json' }) };<br />
+[/js]</p>
+<p>We will modify our <strong>ItemsService</strong> constructor to include <strong>Http</strong> and assign it to a private local instance called <strong>http</strong>.</p>
+<p>[js]<br />
+constructor(private http: Http, private store: Store<appstore>) {<br />
+  this.items = store.select('items');<br />
+}<br />
+[/js]</p>
+<p>From here, let us modify our CRUD methods to handle remote server calls, starting with <strong>loadItems</strong>.  We are calling <strong>this.http.get(BASE_URL)</strong> to get our remote items and because <strong>Http</strong> returns an observable, we can pipe our results through additional operators. We will call <strong>map</strong> to parse our results and then call <strong>map</strong> again to create the object we want to dispatch to our reducer. The combinations of <strong>map</strong> method calls is an observable sequence in that every result gets passed through those sequence of operations. To "tie off" a sequence, we will <strong>subscribe</strong> to it and then hand off control to our reducer by dispatching our transformed results.</p>
+<p>[js]<br />
+loadItems() {<br />
+  // Retrieves the items collection, parses the JSON, creates an event with the JSON as a payload,<br />
+  // and dispatches that event<br />
+  this.http.get(BASE_URL)<br />
+    .map(res => res.json())<br />
+    .map(payload => ({ type: 'ADD_ITEMS', payload }))<br />
+    .subscribe(action => this.store.dispatch(action));<br />
+}<br />
+[/js]</p>
+<p>We will follow a similar pattern when we update <strong>createItem</strong>. The only difference is that we are calling <strong>http.post</strong> with a formatted item as the payload and our <strong>HEADER</strong> constant. Once we have our results, we map everything to an object that we can dispatch in our <strong>subscribe</strong> method.</p>
+<p>[js]<br />
+createItem(item: Item) {<br />
+  this.http.post(BASE_URL, JSON.stringify(item), HEADER)<br />
+    .map(res => res.json())<br />
+    .map(payload => ({ type: 'CREATE_ITEM', payload }))<br />
+    .subscribe(action => this.store.dispatch(action));<br />
+}<br />
+[/js]</p>
+<p>Updating and deleting are a bit simpler in that we are not dependent on an object being returned from the server. We only care that the operation was successful. Because of that, we will use the <strong>http.put</strong> and <strong>http.delete</strong> and skip mapping the response entirely. We can dispatch an action to our reducer from the <strong>subscribe</strong> block as you can see below.</p>
+<p>[js]<br />
+updateItem(item: Item) {<br />
+  this.http.put(&#96;${BASE_URL}${item.id}&#96;, JSON.stringify(item), HEADER)<br />
+    .subscribe(action => this.store.dispatch({ type: 'UPDATE_ITEM', payload: item }));<br />
+}</p>
+<p>deleteItem(item: Item) {<br />
+  this.http.delete(&#96;${BASE_URL}${item.id}&#96;)<br />
+    .subscribe(action => this.store.dispatch({ type: 'DELETE_ITEM', payload: item }));<br />
+}<br />
+[/js]</p>
+<h2>BONUS: Testing</h2>
+<p>One of the most important aspects of redux is that it is <strong>very</strong> easy to test reducers because they are pure functions with a clear contract. In regards to our application, the surface area that contains testable logic has been <strong>vastly</strong> reduced. I wasn't trying to be funny when I wrote that but in hindsight, it kind of is!</p>
+<h3>Setting Up</h3>
+<p>I am not going to get into the entire testing harness but let's a take a quick tour of our test spec. The first thing we need to do is to import <strong>items</strong> and <strong>selectedItems</strong> as well as <strong>it</strong>, <strong>describe</strong> and <strong>expect</strong> from <strong>angular2/testing</strong>. Wait a second! Aren't those Jasmine methods!? Yes they are and Angular 2 now uses Jasmine by default.</p>
+<p>[js]<br />
+import {items, selectedItem} from './items';</p>
+<p>import {<br />
+  it,<br />
+  describe,<br />
+  expect<br />
+} from 'angular2/testing';<br />
+[/js]</p>
+<p>For reference, the skeleton of our spec looks like this.</p>
+<p>[js]<br />
+describe('Items', () => {<br />
+  describe('selectedItem store', () => {<br />
+    it('returns null by default', () => {});<br />
+    it('SELECT_ITEM returns the provided payload', () => {});<br />
+  });<br />
+  describe('items store', () => {<br />
+    let initialState = [<br />
+      { id: 0, name: 'First Item' },<br />
+      { id: 1, name: 'Second Item' }<br />
+    ];<br />
+    it('returns an empty array by default', () => {});<br />
+    it('ADD_ITEMS', () => {});<br />
+    it('CREATE_ITEM', () => {});<br />
+    it('UPDATE_ITEM', () => {});<br />
+    it('DELETE_ITEM', () => {});<br />
+  });<br />
+});<br />
+[/js]</p>
+<p>The tests were really easy to write because we start with an initial state and when we send an action to our reducer, we know exactly what we should get back. We know that if we dispatch an action of <strong>ADD_ITEMS</strong>, we will get back whatever we put in the payload, which we see in the assertion below.</p>
+<p>[js]<br />
+it('ADD_ITEMS', () => {<br />
+  let payload = initialState,<br />
+      stateItems = items([], {type: 'ADD_ITEMS', payload: payload}); // Don't forget to include an initial state</p>
+<p>expect(stateItems).toEqual(payload);<br />
+});<br />
+[/js]</p>
+<p>If we call the <strong>items</strong> reducer with an action type of <strong>CREATE_ITEM</strong>, we would expect that the result would be the initial array plus the new item.</p>
+<p>[js]<br />
+it('CREATE_ITEM', () => {<br />
+  let payload = {id: 2, name: 'added item'},<br />
+      result = [...initialState, payload],<br />
+      stateItems = items(initialState, {type: 'CREATE_ITEM', payload: payload});</p>
+<p>expect(stateItems).toEqual(result);<br />
+});<br />
+[/js]</p>
+<p>We can easily articulate the expected result for the remaining two reducer's methods and then write assertions for them as I have below.</p>
+<p>[js]<br />
+it('UPDATE_ITEM', () => {<br />
+  let payload = { id: 1, name: 'Updated Item' },<br />
+      result = [ initialState[0], { id: 1, name: 'Updated Item' } ],<br />
+      stateItems = items(initialState, {type: 'UPDATE_ITEM', payload: payload});</p>
+<p>expect(stateItems).toEqual(result);<br />
+});</p>
+<p>it('DELETE_ITEM', () => {<br />
+  let payload = { id: 0 },<br />
+      result = [ initialState[1] ],<br />
+      stateItems = items(initialState, {type: 'DELETE_ITEM', payload: payload});</p>
+<p>expect(stateItems).toEqual(result);<br />
+});<br />
+[/js]</p>
+<h2>Review</h2>
+<p>We have covered a <strong>lot</strong> of ground in this lesson and #higFive if you have made it this far! Let's do a quick recap of what we did while it is fresh in our minds.</p>
+<ul>
+<li>The primary characteristics of redux is that state is centralized, events flow up and state flows down.</li>
+<li>The <strong>@ngrx/store</strong> implementation uses observables allows us to populate our templates using the <strong>async</strong> pipe.</li>
+<li>We created our <strong>reducers</strong> which are simple functions that take an <strong>action</strong> and <strong>state</strong> object and returns a new <strong>state</strong> object.</li>
+<li>Our reducer functions must be <strong>pure</strong> and so we saw how we could create them without mutating our collections</li>
+<li>A <strong>store</strong> is basically a key value value map with some mechanisms to handle events and emit state.</li>
+<li>We broadcast our events using <strong>store.emit</strong>.</li>
+<li>We subscribe to data using <strong>store.select</strong>.</li>
+<li>Create a local copy when working with a form to avoid higher level mutations.</li>
+<li>With asynchronous calls, we pass our results through an observable sequence and then emit the event to the reducer on completion.</li>
+<li>Reducers are really easy to test because the methods are pure and the contract is crystal clear.</li>
+</ul>
+<p>Learning redux via @ngrx/store has been the closest thing to that "new programmer" feeling that I have felt in awhile. It is been so much fun! Take the example and play around with it and think about how you can use this approach in your day to day projects. If you create something awesome then by all means, share it in the comments for everyone to check out!</p>
+<blockquote>
+<h3>Huge Shout Outs</h3>
+<p>First and foremost, a big #highFive to <a href="https://twitter.com/dan_abramov" target="_blank">Dan Abramov</a> for creating such an awesome library. I owe <a href="https://twitter.com/robwormald" target="_blank">Rob Wormald</a> a huge debt of gratitude for creating @ngrx/store and being a super awesome and patient friend while I wrapped my mind around this brave new world. I never ever take it for granted the amazing friends that I have who take time to help me write the best possible blog posts that I can. Thank you, <a href="https://twitter.com/josepheames" target="_blank">Joe Eames</a> for your very thorough and thoughtful input as well as <a href="https://twitter.com/victorsavkin" target="_blank">Victor Savkin</a> and <a href="https://twitter.com/teropa" target="_blank">Tero Parviainen</a> for their great feedback and encouragement. Also, a very warm Angular [(hug)] to <a href="https://twitter.com/bahmutov" target="_blank">Gleb Bahmutov</a> for his special Russian brand of tough love.
+</p></blockquote>
+<h2>Resources</h2>
+<p><a href="https://egghead.io/series/getting-started-with-redux" target="_blank">Egghead.io - Getting Started with Redux</a></p>
+<p><a href="https://github.com/Reactive-Extensions/RxJS" target="_blank">Github - RxJS</a></p>
+<p><a href="https://github.com/ngrx/store" target="_blank">Github - ngrx Store</a></p>
+<p><a href="https://angular.io/docs/js/latest/api/http/Http-class.html" target="_blank">Angular2 - Http</a></p>
+<p><a href="https://angular.io/docs/ts/latest/api/http/Headers-class.html" target="_blank">Angular2 - Headers</a></p>
+<p><a href="https://angular.io/docs/ts/latest/api/core/Input-var.html" target="_blank">Angular2 - @Input</a></p>
+<p><a href="https://angular.io/docs/ts/latest/api/core/EventEmitter-class.html" target="_blank">Angular2 - EventEmitter</a></p>
+<p><a href="https://angular.io/docs/ts/latest/guide/pipes.html#the-stateful-asyncpipe-" target="_blank">Angular2 - Async Pipe</a></p>
+<p><a href="https://angular.io/docs/ts/latest/testing/" target="_blank">Angular2 - Testing</a></p>
+<p>[button link="https://github.com/onehungrymind/fem-ng2-ngrx-app" size="large" window="yes"]Code[/button]</appstore></appstore></item></appstore></item></appstore></item></item></appstore></item></appstore></item></item></appstore></item></p>

@@ -1,0 +1,48 @@
+---
+layout: post
+title: 'Quick Note: ng-disabled And Anchor Tags Oh Noes!'
+date: 2012-08-28 06:19:43.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Quick Note
+tags: []
+meta:
+  _edit_last: '8'
+  layout: default
+  hide_post_title: default
+  unlink_post_title: default
+  hide_post_meta: default
+  hide_post_date: default
+  hide_post_image: default
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>So this is a quick, not too serious post about a problem I ran into a couple days ago that I think is worth writing down.</p>
+<p>I am a huge fan of Twitter Bootstrap as I think it gives you so much to work with right out of the gates. I hit a snag a couple days ago when I was trying to apply <strong>ng-disabled</strong> to an anchor tag.</p>
+<p>In Twitter Bootstrap it is super easy to apply their <strong>.btn</strong> class to just about anything. Their docs give me permission so why wouldn't I!?</p>
+<blockquote><p>Button styles can be applied to anything with the .btn class applied. However, typically you'll want to apply these to only &lt;a&gt; and &lt;button&gt; elements for the best rendering.</p></blockquote>
+<p>So when I applied <strong>ng-disabled="true"</strong> to my freshly minted button it would fade out but I was still able to click through. Ummmmm... what the deal?</p>
+<p>So here is the story on why this happens. Form controls have a disabled property on them but anchor tags do not. Therefore, ng-disabled has nothing to actually pin itself on.</p>
+<p>So the fix is super easy once I figured out what was going on.</p>
+<p>This</p>
+<p>{% highlight html %}<br />
+<a class="btn btn-primary" ng-disabled="checked" ng-click="handleClick()">ANCHOR</a><br />
+{% endhighlight %}</p>
+<p>became this</p>
+<p>{% highlight html %}<br />
+<button class="btn btn-primary" ng-disabled="checked" ng-click="handleClick()">BUTTON</button><br />
+{% endhighlight %}</p>
+<p>And bam! Disaster averted. And by 'disaster averted' I mean I got this fixed before QA busted me.</p>
+<p>Here is a more comprehensive fiddle illustrating my experience.</p>
+<p><a href="http://jsfiddle.net/simpulton/q8r4e/" title="ng-disabled + anchor fiddle" target="_blank">http://jsfiddle.net/simpulton/q8r4e/</a></p>

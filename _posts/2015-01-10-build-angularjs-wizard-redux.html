@@ -1,0 +1,269 @@
+---
+layout: post
+title: Build an AngularJS Wizard Redux
+date: 2015-01-10 18:42:22.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _thumbnail_id: '687'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>My original intention was to revisit and update the <a href="http://onehungrymind.com/ng-animate-first-look-with-angularjs-wizard/" title="ng-animate First Look with AngularJS Wizard" target="_blank">ng-animate First Look with AngularJS Wizard</a> post; but by the time I was finished, I had an almost entirely different project on my hands. Since the original post, the ngAnimate API has pretty much entirely changed. Also, the new "controller as" syntax (which I have learned to like quite a bit) was introduced. Along with updating to the latest AngularJS libraries and conventions, I replaced the existing modal with the ui-bootstrap modal since that is what I use almost exclusively now.</p>
+<p>So welcome to an entirely new version of an old blog post! Check out the demo and grab the code. My life is good!</p>
+<p>[button link="http://simpulton.github.io/angularjs-wizard/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-wizard" size="large" window="yes"]Code[/button]</p>
+<p><img src="{{ site.baseurl }}/img/libre_beginning-300x199.jpg" alt="Nacho Beginning" width="300" height="199" class="alignnone size-medium wp-image-694" /></p>
+<h2>The Source Files</h2>
+<p>The wizard is primarily built on top of Bootstrap and AngularJS as you can see in the code below. We will put our animations in the <strong>app.css</strong> file and the application functionality in <strong>app.js</strong>.</p>
+<p>{% highlight html %}<br />
+<!DOCTYPE html SYSTEM><br />
+<html ng-app="App" ng-controller="AppCtrl as app"><br />
+    <head><br />
+        <title>AngularJS Taco Party</title></p>
+<p></head>
+<pre><code>    &lt;link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/css/bootstrap.min.css"&gt;
+    &lt;link rel="stylesheet" type="text/css" href="app.css"/&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- ... --&gt;
+    &lt;script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"&gt;&lt;/script&gt;
+    &lt;script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.8/angular.min.js"&gt;&lt;/script&gt;
+    &lt;script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.8/angular-animate.min.js"&gt;&lt;/script&gt;
+    &lt;script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/js/bootstrap.min.js"&gt;&lt;/script&gt;
+    &lt;script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.12.0/ui-bootstrap-tpls.min.js"&gt;&lt;/script&gt;
+    &lt;script src="app.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+</code></pre>
+<p></html><br />
+{% endhighlight %}</p>
+<p>Once we include the <strong>ngAnimate</strong> and <strong>ui.bootstrap</strong> submodules in our application, the foundation for our wizard will be complete and we can start building on it.</p>
+<p>[js]<br />
+angular.module('App', ['ngAnimate', 'ui.bootstrap'])<br />
+    .controller('AppCtrl', function ($modal) { });<br />
+[/js]</p>
+<p>We will iterate through the steps to build the wizard in a somewhat circular fashion, starting with showing the wizard and ending with closing the wizard and displaying the results.</p>
+<h2>Show the Modal</h2>
+<p>The instantiation of a bootstrap modal is handled by the <strong>$modal</strong> service so we need to inject that into our <strong>AppCtrl</strong>. The creation of the modal is handled by calling <strong>$modal.open(config)</strong> and passing in a configuration option for the new modal. This is surprisingly similar to creating a new route in that the we define values for <strong>templateUrl</strong>, <strong>controller</strong> and <strong>controllerAs</strong> properties.</p>
+<p>[js]<br />
+angular.module('App', ['ngAnimate', 'ui.bootstrap'])<br />
+    .controller('AppCtrl', function ($modal) {<br />
+        var app = this;</p>
+<pre><code>    app.open = function () {
+        var modalInstance = $modal.open({
+            templateUrl: 'partials/wizard.html',
+            controller: 'ModalCtrl',
+            controllerAs: 'modal'
+        });
+    };
+})
+</code></pre>
+<p>[/js]</p>
+<p>We are also storing a reference to the newly minted modal, <strong>modalInstance</strong>, for us to use when we handle the result of closing or dismissing the modal.</p>
+<h2>Navigate the Steps</h2>
+<p>The <strong>$modal</strong> service takes the modal template and the appropriate controller, compiles the two together, and adds the result to the DOM. Now that we have the wizard on the page, the next bit of functionality we will add is the ability to navigate through the steps of the wizard. Our wizard will have three steps which we are defining in the <strong>modal.steps</strong> array as <strong>['one', 'two', 'three']</strong>. We will track the index of the current step with the <strong>modal.step</strong> property. I could have made this more concise by tracking the steps entirely by index, but I like using labels for steps so you can better describe the step you are on.</p>
+<p>We are also going to create an object to take the user input and store it on the <strong>modal.wizard</strong> property. Then we are going to pre-populate the <strong>tacos</strong> property to <strong>2</strong> since that is the polite thing to do. Enough to appear sensible but not so many that we go broke! We are doing this so that we have a persistent mechanism to store the user input as they work through the wizard. We are using <strong>ngSwitch</strong> to change from one step to another and, as you would expect from any good component, it does a very good job of cleaning up after itself. The first iteration I did of this, I was not able to persist the user's input because it kept getting wiped out when I went to the next step. The trick is to promote the data structure to be one level above the actual <strong>ngSwitch</strong> statements.</p>
+<p>[js]<br />
+.controller('ModalCtrl', function ($modalInstance) {<br />
+    var modal = this;</p>
+<pre><code>modal.steps = ['one', 'two', 'three'];
+modal.step = 0;
+modal.wizard = {tacos: 2};
+
+modal.isCurrentStep = function (step) {
+    return modal.step === step;
+};
+
+modal.setCurrentStep = function (step) {
+    modal.step = step;
+};
+
+modal.getCurrentStep = function () {
+    return modal.steps[modal.step];
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>We also have three convenience methods that provide the right levers and switches for controlling the view. The first method is <strong>isCurrentStep(step)</strong>, which tells us if a step is the step we are on currently;  this is good for things like <strong>ngClass</strong>. The second method is <strong>setCurrentStep(step)</strong>, which is a simple setter for setting the current step. And finally, we have <strong>getCurrentStep()</strong>, which returns us the label of the step we are on.</p>
+<p>{% highlight html %}</p>
+<div class="btn-group">
+    <button class="btn" ng-class="{'btn-primary':modal.isCurrentStep(0)}" ng-click="modal.setCurrentStep(0)">Uno</button><br />
+    <button class="btn" ng-class="{'btn-primary':modal.isCurrentStep(1)}" ng-click="modal.setCurrentStep(1)">Dos</button><br />
+    <button class="btn" ng-class="{'btn-primary':modal.isCurrentStep(2)}" ng-click="modal.setCurrentStep(2)">Tres</button>
+</div>
+<p>{% endhighlight %}</p>
+<p>We will use <strong>modal.isCurrentStep(step)</strong> to apply a <strong>btn-primary</strong> class to our button group to visually indicate the active step we are on. We will also attach <strong>modal.setCurrentStep(step)</strong> to <strong>ngClick</strong> to set the current step.</p>
+<p>We are using <strong>ngSwitch</strong> to control which div is shown based on the return value of <strong>modal.getCurrentStep()</strong>. When <strong>modal.getCurrentStep()</strong> returns <strong>two</strong> for instance, then <strong>ng-switch-when="two"</strong> is triggered and that div is shown while the other divs are hidden.</p>
+<p>{% highlight html %}</p>
+<div ng-switch="modal.getCurrentStep()" class="slide-frame">
+<div ng-switch-when="one"></div>
+<div ng-switch-when="two"></div>
+<div ng-switch-when="three"></div>
+</div>
+<p>{% endhighlight %}</p>
+<blockquote><p>
+I am not going to dig into the actual contents of each step of the wizard as it is nothing more than a basic AngularJS form. Definitely check out the AngularJS documentation if you have any questions about how that piece is working.
+</p></blockquote>
+<p>We have covered the button bar on the top which allows us to jump to any point in the wizard, but we need to add in next and previous buttons so we can step through the wizard in a sequential fashion. In the modal footer, we will add two buttons with <strong>a</strong> to handle previous and next actions. Using <strong>ng-show="!modal.isFirstStep()"</strong>, we will toggle the visibility of the previous button based on whether or not we are on the first step. We will do something similar with the label of the next button via <strong>modal.getNextLabel()</strong>, because we want to actually close the modal when we are on the last step and we want to reflect the nature of that interaction. And finally, we have attached <strong>modal.handlePrevious()</strong> and <strong>modal.handleNext()</strong> method calls to the previous and next buttons, respectively.</p>
+<p>{% highlight html %}</p>
+<div class="modal-footer">
+    <button class="btn btn-default" ng-click="modal.handlePrevious()" ng-show="!modal.isFirstStep()">Back</button><br />
+    <button class="btn btn-primary" ng-click="modal.handleNext()">{{modal.getNextLabel()}}</button>
+</div>
+<p>{% endhighlight %}</p>
+<p>In the <strong>ModalCtrl</strong>, we will examine the methods described in the view above. If the intent is clear without going further, I will have considered that a small win. We are going to track whether or not we are on the first or last step with <strong>modal.isFirstStep()</strong> and <strong>modal.isLastStep()</strong>. By comparing <strong>modal.step</strong> to <strong>0</strong>, we can know if we are on the first step and by comparing <strong>modal.step</strong> to the total number of steps i.e. <strong>modal.steps.length - 1</strong>, we can know if we are on the last step.</p>
+<p>[js]<br />
+modal.isFirstStep = function () {<br />
+    return modal.step === 0;<br />
+};</p>
+<p>modal.isLastStep = function () {<br />
+    return modal.step === (modal.steps.length - 1);<br />
+};</p>
+<p>modal.getNextLabel = function () {<br />
+    return (modal.isLastStep()) ? 'Submit' : 'Next';<br />
+};</p>
+<p>modal.handlePrevious = function () {<br />
+    modal.step -= (modal.isFirstStep()) ? 0 : 1;<br />
+};</p>
+<p>modal.handleNext = function () {<br />
+    if (modal.isLastStep()) {<br />
+        $modalInstance.close(modal.wizard);<br />
+    } else {<br />
+        modal.step += 1;<br />
+    }<br />
+};<br />
+[/js]</p>
+<p>We can build on those two simple methods by fleshing out <strong>modal.handlePrevious()</strong>. If we are on the first step then we cannot go back any further, so we will keep <strong>modal.step</strong> at <strong>0</strong>. We will also finish <strong>modal.getNextLabel()</strong> by returning <strong>'Submit'</strong> if we are on the last step and <strong>'Next'</strong> if we are not.</p>
+<p>Things get interesting with <strong>modal.handleNext()</strong> in that we will increment <strong>modal.step</strong> by one if we are not on the last step; but we will actually close the modal and submit the contents of <strong>modal.wizard</strong> if we are. We are able to manage interactions with the actual modal instance through the <strong>$modalInstance</strong> service, which we have injected into <strong>ModalCtrl</strong>. By calling <strong>$modalInstance.close(modal.wizard)</strong>, we are sending the contents of <strong>modal.wizard</strong> back to the origination point of the modal for processing.</p>
+<h2>Dismiss the Modal</h2>
+<p><img src="{{ site.baseurl }}/img/nacho_corn.gif" alt="Nacho Corn" width="500" height="211" class="alignnone size-full wp-image-695" /></p>
+<p>We can also close the modal by dismissing it which is handled differently by the parent controller than closing the modal. We will get into how to handle these two actions in the <strong>AppCtrl</strong> in just a moment; but for now, we just need to know that we dismiss the modal by calling <strong>$modalInstance.dismiss(reason)</strong>.</p>
+<p>[js]<br />
+modal.dismiss = function(reason) {<br />
+    $modalInstance.dismiss(reason);<br />
+};<br />
+[/js]</p>
+<p>We will wrap the <strong>$modalInstance</strong> call in the <strong>modal.dismiss(reason)</strong> method so that we can keep our view from knowing anything about <strong>$modalInstance</strong>. In the modal header, we then call <strong>ng-click="modal.dismiss('No bueno!')"</strong> from <strong>ngClick</strong> to dismiss the modal.</p>
+<p>{% highlight html %}</p>
+<div class="modal-header">
+    <button type="button" class="close" ng-click="modal.dismiss('No bueno!')" aria-hidden="true">&times;</button></p>
+<h3>Taco Party!!!!!</h3>
+</div>
+<p>{% endhighlight %}</p>
+<h2>Animate the Steps</h2>
+<p><img src="{{ site.baseurl }}/img/nacho_fly-300x203.jpg" alt="Nacho Fly" width="300" height="203" class="alignnone size-medium wp-image-692" /></p>
+<p>So far we have been entirely focused on the technical details of setting up the wizard, so I think it is time to spread our wings and fly with the spirit of the eagle! We are going to achieve this super special place of power by adding in a CSS animation using <strong>ngAnimate</strong>.</p>
+<p>Animations in <strong>ngAnimate</strong> follow a fairly conventional format that is pretty easy to leverage once you understand how they are defined. In CSS, they basically follow a [class-name].[event-name].[state-name]. We are going to start with a base class of wave and construct our animations off of that.</p>
+<blockquote><p>
+We are only going to touch the surface of how to do one type of animation in AngularJS. I highly recommend reading <a href="http://www.yearofmoo.com/2013/08/remastered-animation-in-angularjs-1-2.html" title="Remastered Animation in AngularJS 1.2" target="_blank">Remastered Animation in AngularJS 1.2</a> by my BFF Matias Niemela for a more in-depth explanation. He wrote <strong>ngAnimate</strong> so it is safe to say that he knows things!
+</p></blockquote>
+<p>The first thing we need to do is to define the nature of the transition for adding and removing the wave class. Following the convention I described above, we will define a style for <strong>.wave.ng-enter</strong> and <strong>.wave.ng-leave</strong> since <strong>wave</strong> is the base style and <strong>ng-leave</strong> and <strong>ng-enter</strong> are the events that are triggered. From here, we are defining our transition to animate <strong>all</strong> properties using the <strong>cubic-bezier</strong> tween we defined at <strong>0.5</strong> seconds.</p>
+<p>[css]<br />
+.wave.ng-enter, .wave.ng-leave {<br />
+  -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+}<br />
+[/css]</p>
+<p>First, we will define the transition for when an element is activated via ngSwitch. The base class is <strong>wave</strong>, the event is <strong>ng-enter</strong> and the state when it is actively applied aka the finished state is <strong>ng-enter-active</strong>. When a new step is activated, we want it to slide in from the left, so we start out by setting the left property to <strong>-100%</strong> and finish at <strong>0</strong>.</p>
+<p>[css]<br />
+.wave.ng-enter {<br />
+  position: absolute;<br />
+  left:-100%;<br />
+}</p>
+<p>.wave.ng-enter.ng-enter-active {<br />
+  left:0;<br />
+}<br />
+[/css]</p>
+<p>We will do the opposite for the step that is being left by harnessing the <strong>ng-leave</strong> event and starting at <strong>left:0</strong> and and finishing with <strong>left: 100%</strong>.</p>
+<p>[css]<br />
+.wave.ng-leave {<br />
+  position: absolute;<br />
+  left:0;<br />
+}</p>
+<p>.wave.ng-leave.ng-leave-active {<br />
+  left:100%;<br />
+}<br />
+[/css]</p>
+<p>The beauty of <strong>ngAnimate</strong> is that attaching animations is as easy as attaching a class to our view. In the curious case of our wizard, it goes no further than adding <strong>class="wave"</strong> to our three <strong>ngSwitch</strong> divs.</p>
+<p>{% highlight html %}</p>
+<div ng-switch="modal.getCurrentStep()" class="slide-frame">
+<div ng-switch-when="one" class="wave"></div>
+<div ng-switch-when="two" class="wave"></div>
+<div ng-switch-when="three" class="wave"></div>
+</div>
+<p>{% endhighlight %}</p>
+<h2>Handling the Response</h2>
+<p>And now we are full circle and it is time to hand off the results of our wizard to the main application. When we stored the reference of our modal as <strong>modalInstance</strong>, it came with a result property that is actually a promise and is resolved when the modal is closed or dismissed. The distinction between <strong>$modalInstance.close(data)</strong> and <strong>$modalInstance.dismiss(reason)</strong> is that the <strong>close</strong> handler is treated as the <strong>success</strong> function and the <strong>dismiss</strong> handler is treated as the <strong>error</strong> function.</p>
+<p>[js]<br />
+angular.module('App', ['ngAnimate', 'ui.bootstrap'])<br />
+    .controller('AppCtrl', function ($modal) {<br />
+        var app = this;</p>
+<pre><code>    app.closeAlert = function () {
+        app.reason = null;
+    };
+
+    app.open = function () {
+        var modalInstance = $modal.open({
+            templateUrl: 'partials/wizard.html',
+            controller: 'ModalCtrl',
+            controllerAs: 'modal'
+        });
+
+        modalInstance.result
+            .then(function (data) {
+                app.closeAlert();
+                app.summary = data;
+            }, function (reason) {
+                app.reason = reason;
+            });
+    };
+})
+</code></pre>
+<p>[/js]</p>
+<p>In the case of a dismissal, we are setting the <strong>reason</strong> to <strong>app.reason</strong>, which is tied to an alert in the view. This is slightly gratuitous but hey! That is how I roll! We then dismiss the alert by calling <strong>app.closeAlert()</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="alert-container">
+    <alert ng-if="app.reason" type="info" close="app.closeAlert()">{{app.reason}}</alert>
+</div>
+<p>{% endhighlight %}</p>
+<p>In the case of submitting the wizard, we close the alert in case it is showing and then set <strong>app.summary</strong> to <strong>data</strong>, which is the result of the wizard.</p>
+<p>{% highlight html %}</p>
+<div ng-if="app.summary">
+<hr />
+<h3>Summary for {{app.summary.firstName}} {{app.summary.lastName}}</h3>
+<p>    <strong>Coming: </strong>{{app.summary.coming}}</p>
+<p>    <strong>Tacos: </strong>{{app.summary.tacos}}</p>
+<p>    <strong>Toppings:</strong></p>
+<div class="badge badge-success pull-left" ng-repeat="topping in app.summary.toppings">{{topping}}
+    </div>
+</div>
+<p>{% endhighlight %}</p>
+<p>We can then bind to <strong>app.summary</strong> in the view to show the results of the wizard. These last two items are more for illustration purposes, but I believe by now we have gotten the point.</p>
+<h2>Review</h2>
+<p>Let us take a moment to review what we have learned.</p>
+<ol>
+<li>We need to include the <strong>ngAnimate</strong> and <strong>ui.bootstrap</strong> submodules to make our wizard work.</li>
+<li>We instantiate a new modal buy calling <strong>open</strong> on the <strong>$modal</strong> service.</li>
+<li>The object returned by calling <strong>$modal.open</strong> has a property called <strong>result</strong>, which is a promise we use to handle the result of closing or dismissing the modal.</li>
+<li>We can use <strong>ngSwitch</strong> to toggle the steps within the wizard. We could also use <strong>ngShow</strong>, <strong>ngHide</strong> or <strong>ngIf</strong> to accomplish the same thing.</li>
+<li>By following the convention of [class-name].[event-name].[state-name], we are able to define the animations for a step animating in and out.</li>
+</ol>
+<h2>Resources</h2>
+<p><a href="http://www.yearofmoo.com/2013/08/remastered-animation-in-angularjs-1-2.html" title="Remastered Animation in AngularJS 1.2" target="_blank">Remastered Animation in AngularJS 1.2</a></p>
+<p><a href="http://angular-ui.github.io/bootstrap/#/modal" title="UI Boostrap Modal" target="_blank">UI Boostrap Modal</a></p>
+<p>[button link="http://simpulton.github.io/angularjs-wizard/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-wizard" size="large" window="yes"]Code[/button]</p>

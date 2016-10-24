@@ -1,0 +1,152 @@
+---
+layout: post
+title: Electron all the Angular 2 Things
+date: 2016-05-16 20:29:47.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Angular 2
+- Electron
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _yoast_wpseo_primary_category: '40'
+  _oembed_bb1440130acd0c8e95367330cba94086: '{{unknown}}'
+  _oembed_692f4fa19c5dceec3b7b222ece4088db: '{{unknown}}'
+  _oembed_8436a1be092794587733532d5fce26d4: '{{unknown}}'
+  _oembed_0b73cf5df0bb4c07f357f8a16b56c810: '{{unknown}}'
+  _oembed_c372c5b2de7686b1da609bb97b87c1b8: '{{unknown}}'
+  _oembed_72035997f4e8cb50a01c6060e79b5738: '{{unknown}}'
+  _oembed_9bb4d2fa012b559ca23da69a54adc315: '{{unknown}}'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _oembed_95bfc0ee3940b2a24c3ec58507b4fa9f: '{{unknown}}'
+  _thumbnail_id: '1221'
+  _yoast_wpseo_content_score: '60'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>Intro</h2>
+<p>I recently had the opportunity to conduct an Electron workshop at <a href="https://www.ng-conf.org/" target="_blank">ng-conf 2016</a> and I wanted to share my slides and project, as well as a few screencasts (since I could not help myself). For the uninitiated, Electron is a runtime that allows you to package your HTML web applications into native desktop applications. Native programming is something that I looooooooooooooooove... trying to learn how to like even a little (<a href="https://www.youtube.com/watch?v=Re28llOjLSA" target="_blank">Brian Regan nod</a>). Thankfully, Electron makes it <strong>ridiculously</strong> easy!</p>
+<p>Our sample application is an Instagram style application build in Electron and after investing a half of a million dollars in market research, we are confident that the brand <strong>Electrogram</strong> is going to take off. Download the repo and follow along with the screencasts to get your learn on!</p>
+<p>[button link="https://github.com/onehungrymind/electrogram" size="large" window="yes"]Code[/button]</p>
+<h2>The Slides</h2>
+<p><iframe src="//www.slideshare.net/slideshow/embed_code/key/doK8h6nWkThoLk" width="1024" height="567" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe></p>
+<div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/simpul/get-that-corner-office-with-angular-2-and-electron" title="Get that Corner Office with Angular 2 and Electron" target="_blank">Get that Corner Office with Angular 2 and Electron</a> </strong> from <strong><a href="//www.slideshare.net/simpul" target="_blank">Lukas Ruebbelke</a></strong> </div>
+<h2>Hello Electron!</h2>
+<p><script charset="ISO-8859-1" src="//fast.wistia.com/assets/external/E-v1.js" async></script></p>
+<div class="wistia_embed wistia_async_upmed10x2h" style="height:567px;width:1024px">&nbsp;</div>
+<div style="height:10px"></div>
+<p>Let us take a moment to do a quick overview of how Electron works and what a basic app looks like. Electron has two main components: the <strong>main</strong> process and the <strong>renderer</strong> process. The <strong>main</strong> process is what runs when <strong>package.json</strong> is executed and is responsible for creating the <strong>BrowserWindow</strong> object which our <strong>renderer</strong> process runs in.</p>
+<p>There are three main files that compose an Electron application. The <strong>index.html</strong> file contains normal HTML markup. By itself, it would simply serve up in a browser just like any other website. This is also where you will include all your CSS and JS, just like any other web app.</p>
+<p>The <strong>main.js</strong> contains the logic that bootstraps the Electron app. It is basically just a node script that can open windows and tabs, and provide much more. Finally, <strong>package.json</strong> contains all of the necessary NPM packages for the app. The important piece of this file is the "main" attribute: this is what the packager uses when you want to build the app for native operating systems.</p>
+<h3>Getting started</h3>
+<p>To use electron globally, run <strong>npm i -g electron-prebuilt</strong>. When you want to run an electron application, run <strong>electron <scriptname>.js</scriptname></strong> (generally <strong>main.js</strong>). This will start the main process in <strong>main.js</strong>.</p>
+<h2>Adding Angular 2</h2>
+<p><script charset="ISO-8859-1" src="//fast.wistia.com/assets/external/E-v1.js" async></script></p>
+<div class="wistia_embed wistia_async_s95leqx0r5" style="height:567px;width:1024px">&nbsp;</div>
+<div style="height:10px"></div>
+<h3>Structure</h3>
+<p>We generally like to include all Angular code in a sub-directory, usually <strong>src</strong> or <strong>app[</strong>. Any files that deal strictly with Electron we keep in the root folder; unless, of course, there are a bunch of files, in which case it would make sense to put supporting files in a sub-directory.</p>
+<h3>Integration</h3>
+<p>You can reference your javascript files in <strong>index.html</strong>, just like any other web application or site, and then run <strong>electron</strong>. Since new windows are just web pages served using Chromium and built off of HTML files, your Angular app will be bootstrapped as soon as the window is opened and will behave identically to a web page.</p>
+<h3>Webpack</h3>
+<p>Since we are just serving HTML and CSS, Webpack will still work as before. The main difference for us was that we added a <strong>target</strong> attribute to the webpack config and set it to <strong>electron-renderer</strong>. This gave us the ability to import node and electron modules directly.</p>
+<h3>Typings</h3>
+<p>Since the Angular app is in typescript and we want to integrate some Electron modules, we had to install the electron typings to use electron packages in our code.</p>
+<h2>Notifications</h2>
+<p><script charset="ISO-8859-1" src="//fast.wistia.com/assets/external/E-v1.js" async></script></p>
+<div class="wistia_embed wistia_async_gk0a7k1a5y" style="height:567px;width:1024px">&nbsp;</div>
+<div style="height:10px"></div>
+<p>HTML5 provides an amazing notification API that is incredibly simple to use. Electron connects the HTML5 notification API with the native notification API; the result is that you write HTML5 notifications in your app, but the end user sees native notifications. To create a notification in your app, follow this format:</p>
+<p>[js]<br />
+let myNotification = new Notification('Image Saved', {<br />
+ body: fileName<br />
+});<br />
+[/js]</p>
+<p>Here we are creating an instance of the Notification class, passing in a title and a configuration object, and that is it. Now when an image is saved, we get a native notification alerting us.</p>
+<h2>Inter-Process Communication (IPC)</h2>
+<p><script charset="ISO-8859-1" src="//fast.wistia.com/assets/external/E-v1.js" async></script></p>
+<div class="wistia_embed wistia_async_6vjp02q2oo" style="height:567px;width:1024px">&nbsp;</div>
+<div style="height:10px"></div>
+<p>Inter-process communication (IPC) is handled by two different modules: <strong>ipcMain</strong> in the main process and <strong>ipcRenderer</strong> in the renderer process. One scenario for IPC is calling a "Save As" task from the main menu of the app. The menu was built in the main process, but files are saved in a renderer process so we need a way to communicate.</p>
+<p>When someone clicks the "Save As" menu item, we want to broadcast a <strong>save-file</strong> message from <strong>mainWindow.webcontents</strong>. Any listener attached to the <strong>save-file</strong> channel will be notified and its callback invoked.</p>
+<p>[js]<br />
+// main.js (main process)<br />
+let mainWindow = new BrowserWindow({width: 800, height: 600});<br />
+...<br />
+fileMenu.submenu<br />
+  .find(item => item.label === 'Save As...')<br />
+  .click = () => mainWindow.webContents.send('save-file')<br />
+[/js]</p>
+<p>We use <strong>ipcRenderer</strong> to listen for the <strong>save-file</strong> event in the renderer process and call the class method <strong>save</strong>. This is an easy way to get communication from the main process to the renderer processes.</p>
+<p>[js]<br />
+// app.ts (renderer process)<br />
+import {ipcRenderer} from 'electron';<br />
+constructor() {<br />
+  ipcRenderer.on('save-file', this.save.bind(this));<br />
+}<br />
+[/js]</p>
+<h2>Packaging Electron</h2>
+<p><script charset="ISO-8859-1" src="//fast.wistia.com/assets/external/E-v1.js" async></script></p>
+<div class="wistia_embed wistia_async_6iww46zb6l" style="height:567px;width:1024px">&nbsp;</div>
+<div style="height:10px"></div>
+<p>It used to be that we had to worry about packaging for each OS ourselves and it involved a lot of moving pieces. Fortunately, a package has been written that abstracts most of the logic away and allows you to run one script and build for most any OS.</p>
+<p>First, you will need the <strong>electron-packager</strong> npm module via <strong>npm i -g electron-packager</strong>.</p>
+<p>To use this package, just run <strong>electron-packager</strong> on the command line. The OS, architecture, and other options are set via flags:</p>
+<p>[shell]<br />
+electron-packager . <appname><br />
+--platform=
+<platform>
+--arch=<architecture><br />
+--out=<outputdirectory><br />
+--overwrite<br />
+--icon=path/to/custom/icon<br />
+--asar<br />
+[/shell]</p>
+<p>For the case of our particular app it was:</p>
+<p>[shell]<br />
+electron-packager . Electrogram --platform=darwin --arch=x64 --out=releases/ --overwrite --icon=src/assets/images/electrogram  --asar<br />
+[/shell]</p>
+<p>What we essentially accomplished was taking the current working directory, packaging it with the name “Electrogram”, targeting OSX on the x64 architecture, outputting the result to the “releases” directory, overwriting the OSX package in “releases” if it exists already, using the specified icon, and archiving the source code.</p>
+<p>Here is a list of the options we can use:</p>
+<ul>
+<li>platform: the OS you are targeting... could be one or more of darwin, linux, mas, win32 (comma-delimited if multiple)</li>
+<li>arch: the architecture you are targeting... could be one of all, ia32, x64</li>
+<li>out: where the resulting files will go</li>
+<li>overwrite: whether or not to replace the directory for a platform if it has already been created</li>
+<li>icon: a custom icon to use for the app... see "custom icon" section below</li>
+<li>asar: packages the source code within your app into an archive</li>
+</ul>
+<h3>Custom Icon</h3>
+<p>We can also specify a custom icon for our app when we package it for distribution. The first thing we need to do is to create an icon for the correct format for our OS. For Mac, it is <strong>.icons</strong> and for Windows and Linux it is <strong>.png</strong> or <strong>.ico</strong>. Note, you do <strong>not</strong> need to specify the extension for the icon which allows us to create an icon in different formats and let our packager sort it out for us.</p>
+<h2>Resources</h2>
+<p>[button link="https://github.com/onehungrymind/electrogram" size="large" window="yes"]Code[/button]</p>
+<div style="height:10px"></div>
+<p><a href="http://electron.atom.io/docs/" target="_blank">Electron Documentation</a><br />
+<a href="https://www.npmjs.com/package/electron-packager" target="_blank">electron-packager Documentation</a><br />
+<a href="https://medium.com/developers-writing/building-a-desktop-application-with-electron-204203eeb658#.2lvdqg3fk" target="_blank">Building a desktop application with Electron</a> <strong>Great article!</strong></p>
+<p><!--
+<div class="md-card aligncenter">
+<div style="<br />
+  background-image: url('http://onehungrymind.com/wp-content/uploads/2016/05/bg-slide-01.jpg');<br />
+  height: 200px;<br />
+  background-position: 50% 34%;<br />
+"></div>
+<div class="md-card-title">
+<span class="md-headline center"><br />
+Learn to Build Awesome Apps with Angular 2<br />
+</span>
+</div>
+<div class="md-card-content">
+Want to learn more? Attend a two-day, hands-on Angular 2 workshop in San Francisco! We are going to have several Angular 2 experts for a two-day workshop covering everything you need to know. And because we like to have fun, attend an epic after party with a bunch of our best Angular friends! <strong>Get $50 off with NGCREW coupon code today!</strong><br />
+<a href="https://ti.to/js-workshops/angular-2/discount/NGCREW" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://ti.to/js-workshops/angular-2/discount/NGCREW', 'Register Now']);" class="md-button" target="_blank"><span>Register Now</span></a> <a href="http://onehungrymind.com/workshops/" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'http://onehungrymind.com/workshops/', 'Get the Details']);" class="md-button" target="_blank"><span>Get the Details</span></a>
+</div>
+</div>
+<p>--></outputdirectory></architecture></platform></appname></p>

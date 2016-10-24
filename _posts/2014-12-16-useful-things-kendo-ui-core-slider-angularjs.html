@@ -1,0 +1,75 @@
+---
+layout: post
+title: Useful Things with Kendo UI Core Slider and AngularJS
+date: 2014-12-16 17:47:59.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- jQuery
+- Programming
+- UI
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '997'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>I have had a few questions about my use of the Kendo slider in <a href="https://github.com/simpulton/viewnicorn" title="Viewnicorn" target="_blank">Viewnicorn</a>, so I just wanted to take a quick minute and show how easy it is to use it in your application.</p>
+<p>I am using Kendo UI Core which is a totally free and open-source version of Kendo UI that comes with an impressive set of components. Not only does Kendo UI Core come with a bunch of useful components, but also it has AngularJS bindings built into it. Double rainbow all the way!</p>
+<blockquote><p>
+There is the new <a href="https://material.angularjs.org/#/" title="AngularJS Material" target="_blank">AngularJS Material Design</a> project that is extremely promising, so definitely keep an eye on that.
+</p></blockquote>
+<p>[button link="http://embed.plnkr.co/sxkCUH/preview" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="http://plnkr.co/edit/sxkCUH" size="large" window="yes"]Code[/button]</p>
+<h2>The Demo</h2>
+<p>[iframe src="http://embed.plnkr.co/sxkCUH/preview" height="400px"]</p>
+<h2>The Code</h2>
+<p>The first thing we need to do is to add the appropriate source files to our page. This includes jQuery, AngularJS, and the Kendo UI Core source files. We are including the entire core for this example, but you can also do a custom build where you only include the components that you need.</p>
+<p>{% highlight html %}<br />
+  <script src="http://cdn.kendostatic.com/2014.2.716/js/jquery.min.js"></script><br />
+  <script src="https://code.angularjs.org/1.3.5/angular.js"></script><br />
+  <script src="http://cdn.kendostatic.com/2014.2.716/js/kendo.ui.core.min.js"></script><br />
+{% endhighlight %}</p>
+<p>We will also include the appropriate CSS files.</p>
+<p>{% highlight html %}</p>
+<link href="http://cdn.kendostatic.com/2014.2.716/styles/kendo.common.min.css" rel="stylesheet" />
+<link href="http://cdn.kendostatic.com/2014.2.716/styles/kendo.default.min.css" rel="stylesheet" />
+{% endhighlight %}</p>
+<p>From here we need to include the <strong>kendo.directives</strong> submodule into our application.</p>
+<p>[js]<br />
+angular.module("party", ["kendo.directives"])<br />
+  .controller('SliderCtrl', function() {<br />
+    var sliderCtrl = this;<br />
+    sliderCtrl.amount = 67;<br />
+  });<br />
+[/js]</p>
+<p>We are also declaring a controller called <strong>SliderCtrl</strong> and setting an <strong>amount</strong> property on it (we will bind to it in just a moment).</p>
+<p>And now for the Kendo parts! We are going to add an input to our HTML and grant it super slider powers by adding the <strong>kendo-slider</strong> attribute to it. This will instantiate the Kendo slider directive; we will then set the range using <strong>k-min</strong> and <strong>k-max</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="form-group">
+  <input kendo-slider="" k-min="0" k-max="100" ng-model="sliderCtrl.amount" />
+</div>
+<h1 class="jumbotron text-center">{{sliderCtrl.amount}}</h1>
+<p>{% endhighlight %}</p>
+<p>And from here it is the standard <strong>ng-model</strong> song and dance. We are binding the slider to <strong>sliderCtrl.amount</strong> and then displaying that value in the <strong>jumbotron</strong>.</p>
+<blockquote><p>
+You can also call methods when the slider changes using the <strong>k-on-change</strong> attribute such as <strong>k-on-change="onSliderUpdated(kendoEvent)"</strong> which will take care of the <strong>$digest</strong> cycle for you.
+</p></blockquote>
+<p>And that is all there is to it! I definitely appreciate having a quality control to use in my applications that is free, open-source, and super simple to set up. As always, I love questions and comments; in fact, a lot of my posts stem from conversations that I have with other developers. Let me know what you think in the comments below. Catch you on the next post!</p>
+<h2>Resources</h2>
+<p><a href="https://github.com/telerik/kendo-ui-core" title="Kendo UI Core" target="_blank">Kendo UI Core</a></p>
+<p><a href="http://docs.telerik.com/kendo-ui/AngularJS/introduction" title="Kendo UI Core with AngularJS" target="_blank">Kendo UI Core with AngularJS</a></p>
+<p>[button link="http://embed.plnkr.co/sxkCUH/preview" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="http://plnkr.co/edit/sxkCUH" size="large" window="yes"]Code[/button]</p>

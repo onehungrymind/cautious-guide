@@ -1,0 +1,273 @@
+---
+layout: post
+title: Easy Zip Parsing with JSZip and Angular
+date: 2015-03-13 16:27:27.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '1035'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>I recently had a client approach me about an interesting problem for which they needed a solution where their customers could drop a zip file onto the browser, unzip the file and parse an XML manifest. They wanted to know if it was possible to do this all in the browser without having to send the zip file to the server for processing. <a href="https://twitter.com/filearts" title="Geoff Goodman" target="_blank">Geoff Goodman</a> and I came up with a pretty easy solution that I wanted to share given its incredible utility. It was really cool hacking on a project with Geoff and seeing how he approached it. Everyone is unique in how they program and he was no exception!</p>
+<p>We modified the solution to read a zip file with <strong>package.json</strong> file to make it easy for everyone to create a zip file to work with. In fact! We included a <strong>package.json</strong> file in the Plunker project so that you can download the project zip and use that to test the project. How meta!</p>
+<p>The star of the show is <a href="https://stuk.github.io/jszip/" title="JSZip" target="_blank">JSZip</a> which is a really easy to use library and makes parsing zip files a snap. Check out the plunk and let's get started.</p>
+<p>[button link="http://plnkr.co/edit/WVfxDta2GSC9zwLFuvt2?p=preview" size="large" window="yes"]Demo[/button]</p>
+<h2>The Drop Container</h2>
+<p>The first thing that we are going to dig into is the mechanism that handles the actual <strong>drop</strong> event when a file is dropped onto the browser window. We have a <strong>dropFiles</strong> directive that handles the drop event, parses the dropped files and then passes those files to the parent controller for handling.</p>
+<p>The one thing that I believe is the most important to understand about the <strong>dropFiles</strong> directive is that we are interacting with its isolate scope with an expression that has the same name as the directive. This allows us to define the directive like this <strong>drop-files="main.handleFiles(files)"</strong> so that when we call <strong>ctrl.dropFiles({files: files})</strong> from within the directive it will actually call <strong>handleFiles(files)</strong> on the <strong>MainCtrl</strong>.</p>
+<blockquote><p>
+Isolated scope is a powerful but sometimes confusing concept so if you would like to read more about it, check out this handy infographic I created for this post <a href="http://onehungrymind.com/infographic-understanding-angularjs-isolated-scope/" title="Infographic: Understanding AngularJS Isolated Scope" target="_blank">Infographic: Understanding AngularJS Isolated Scope</a>
+</p></blockquote>
+<p>{% highlight html %}<br />
+<body ng-controller="MainCtrl as main"></p>
+<div class="panel panel-default drop-target" drop-files="main.handleFiles(files)">
+<div class="panel-body">
+      Drop Your Zip File Here
+    </div>
+</p></div>
+<p></body><br />
+{% endhighlight %}</p>
+<h3>Define the Event Handlers</h3>
+<p>From within the directive, we will define our event handlers for the <strong>dragover</strong> and <strong>drop</strong> events. We will also define an event handler for the <strong>$destroy</strong> event on <strong>$scope</strong> and deregister the event handlers we just defined. This keeps things tidy and is important when we define the directive on elements that are dynamically being added to the DOM.</p>
+<p>[js]<br />
+$element.on("dragover", handleDragOver);<br />
+$element.on("drop", handleDrop);</p>
+<p>$scope.$on("$destroy", function () {<br />
+  $element.off("dragover", handleDragOver);<br />
+  $element.off("drop", handleDrop);<br />
+});<br />
+[/js]</p>
+<h3>The Event Handlers</h3>
+<p>From within our event handlers, the first thing that we will do is to stop the event with <strong>e.preventDefault</strong> so that we can handle it ourselves. Within the <strong>handleDrop</strong> method, we are going to handle the files we just dropped by calling <strong>extractFiles</strong> and passing in the event. Once that is done, we will call <strong>ctrl.dropFiles({files: files})</strong> which will delegate the real work to the parent controller.</p>
+<p>[js]<br />
+var handleDragOver = function (e) {<br />
+  e.preventDefault();<br />
+};</p>
+<p>var handleDrop = function (e) {<br />
+  e.preventDefault();</p>
+<p>var files = extractFiles(e);</p>
+<p>ctrl.dropFiles({files: files});<br />
+};<br />
+[/js]</p>
+<h3>Extract the Files</h3>
+<p>All the <strong>extractFiles</strong> method does is extract the files from the event and pushes them into an array to be returned.</p>
+<p>[js]<br />
+var extractFiles = function (e) {<br />
+  var files = e.dataTransfer.files;<br />
+  var filesArray = [];</p>
+<p>for (var i = 0; i &lt; files.length; i++) {<br />
+    filesArray.push(files[i]);<br />
+  }</p>
+<p>return filesArray;<br />
+};<br />
+[/js]</p>
+<h3>The Drop Files Directive</h3>
+<p>You can see the entire directive below. Another thing worth mentioning is that we are passing a fourth parameter into the <strong>linkFn</strong> function called <strong>ctrl</strong> which is actually the controller instance for the directive. This is why we are calling the <strong>dropFiles</strong> method as <strong>ctrl.dropFiles</strong>.</p>
+<p>[js]<br />
+angular.module("fa.droppable", [<br />
+])</p>
+<p>.directive("dropFiles", [ function () {<br />
+  var linkFn = function (scope, element, attrs, ctrl) {<br />
+    var extractFiles = function (e) {<br />
+      var files = e.dataTransfer.files;<br />
+      var filesArray = [];</p>
+<pre><code>  for (var i = 0, len = files.length; i &lt; len; i++) {
+    filesArray.push(files[i]);
+  }
+
+  return filesArray;
+};
+
+var handleDragOver = function (e) {
+  e.preventDefault();
+};
+
+var handleDrop = function (e) {
+  e.preventDefault();
+
+  var files = extractFiles(e);
+
+  ctrl.dropFiles({files: files});
+};
+
+$element.on("dragover", handleDragOver);
+$element.on("drop", handleDrop);
+
+$scope.$on("$destroy", function () {
+  $element.off("dragover", handleDragOver);
+  $element.off("drop", handleDrop);
+});
+</code></pre>
+<p>};</p>
+<p>return {<br />
+    restrict: "A",<br />
+    controller: "DropFilesController",<br />
+    controllerAs: "drop",<br />
+    bindToController: true,<br />
+    require: "dropFiles",<br />
+    scope: {<br />
+      accepts: "&amp;",<br />
+      dropFiles: "&amp;",<br />
+    },<br />
+    link: linkFn,<br />
+  };<br />
+}])</p>
+<p>.controller("DropFilesController", [ function () {<br />
+  var drop = this;<br />
+}])<br />
+[/js]</p>
+<p>And this is as far as we will take the <strong>dropFiles</strong> directive; but if someone were so inclined, they could easily add in extra functionality within the <strong>DropFilesController</strong>.</p>
+<h2>Parsing</h2>
+<p>Control is handed back to the MainCtrl when <strong>main.handleFiles</strong> is called. Since we are only handling a single file, we will pass the first item of the <strong>files</strong> array to the <strong>extractAndParse</strong> service for well... extraction and parsing.</p>
+<p>[js]<br />
+app.controller('MainCtrl', ["extractAndParse", function (extractAndParse) {<br />
+  var main = this;<br />
+  main.handleFiles = function (files) {<br />
+    main.error = null;</p>
+<pre><code>extractAndParse(files[0])
+  .then(function (file) {
+    main.file = file;
+    console.log('main', main.file);
+  }, function(reason){
+    main.error = reason.message;
+  });
+</code></pre>
+<p>};<br />
+}]);<br />
+[/js]</p>
+<p>The entry point for the <strong>extractAndParse</strong> service is a method of the same name that accepts a single parameter, which is the zip file. The <strong>extractAndParse</strong> method calls the <strong>unzip</strong> method which returns a promise; we then return the promise to the <strong>MainCtrl</strong> after calling <strong>JSON.parse</strong> on the results of the operation.</p>
+<p>[js]<br />
+angular.module("fa.extractAndParse", [<br />
+])<br />
+.factory("extractAndParse", ["$q", function ($q) {<br />
+  //...</p>
+<p>function extractAndParse (zipfile) {<br />
+    return unzip(zipfile)<br />
+      .then(JSON.parse);<br />
+  }</p>
+<p>return extractAndParse;<br />
+}]);<br />
+[/js]</p>
+<p>The heavy lifting happens in the <strong>unzip</strong> method and it consists of two main steps. The first step is the instantiation of a new <strong>FileReader</strong> object which allows us to asynchronously read the contents of a file. We can initiate the reading of the <strong>zipfile</strong> by calling <strong>reader.readAsArrayBuffer</strong> and, more importantly, decide how we are going to handle the results in the <strong>onload</strong> event.</p>
+<p>If there was an error, then we will simply reject the <strong>deferred</strong> promise we created. If not, we will create a new <strong>JSZip</strong> instance and pass in <strong>reader.result</strong>. The zip files are stored in key value pairs and since we are only interested in <strong>package.json</strong>, we will create a reference with the appropriately named <strong>file</strong> variable. If there is not a <strong>package.json</strong> file in the zip, then <strong>file</strong> will be <strong>undefined</strong> and we reject the promise with an error. If <strong>file</strong> is defined, we will resolve the promise with its contents in the form of a unicode string.</p>
+<p>[js]<br />
+function unzip (zipfile) {<br />
+  var deferred = $q.defer();<br />
+  var reader = new FileReader();</p>
+<p>reader.onerror = deferred.reject.bind(deferred);<br />
+  reader.onload = function (e) {<br />
+    if (!reader.result) deferred.reject(new Error("Unknown error"));</p>
+<pre><code>var zip = new JSZip(reader.result);
+var file = zip.files['package.json'];
+
+if(typeof file === 'undefined') {
+  deferred.reject(new Error('package.json does not exist'));
+}
+
+return deferred.resolve(file.asText());
+</code></pre>
+<p>};</p>
+<p>reader.readAsArrayBuffer(zipfile);</p>
+<p>return deferred.promise;<br />
+}<br />
+[/js]</p>
+<p>You can see the entirety of the <strong>extractAndParse</strong> service below.</p>
+<p>[js]<br />
+angular.module("fa.extractAndParse", [<br />
+])<br />
+.factory("extractAndParse", ["$q", function ($q) {<br />
+  function unzip (zipfile) {<br />
+    var deferred = $q.defer();<br />
+    var reader = new FileReader();</p>
+<pre><code>reader.onerror = deferred.reject.bind(deferred);
+reader.onload = function (e) {
+  if (!reader.result) deferred.reject(new Error("Unknown error"));
+
+  var zip = new JSZip(reader.result);
+  var file = zip.files['package.json'];
+
+  if(typeof file === 'undefined') {
+    deferred.reject(new Error('package.json does not exist'));
+  }
+
+  return deferred.resolve(file.asText());
+};
+
+reader.readAsArrayBuffer(zipfile);
+
+return deferred.promise;
+</code></pre>
+<p>}</p>
+<p>function extractAndParse (zipfile) {<br />
+    return unzip(zipfile)<br />
+      .then(JSON.parse);<br />
+  }</p>
+<p>return extractAndParse;<br />
+}]);<br />
+[/js]</p>
+<h2>Displaying</h2>
+<p><img src="{{ site.baseurl }}/img/dependencies.png" alt="Dependencies" width="743" height="429" class="alignnone size-full wp-image-1036" /></p>
+<p>Now that we are getting a JSON file delivered to our controller all cleaned up and ready to roll, it is pretty much routine Angular from here on out. We are setting the contents of the <strong>package.json</strong> to <strong>main.file</strong> and then binding to it in our HTML. If something goes awry then we are setting the <strong>main.error</strong> property to give feedback to the user.</p>
+<p>[js]<br />
+app.controller('MainCtrl', ["extractAndParse", function (extractAndParse) {<br />
+  var main = this;<br />
+  main.handleFiles = function (files) {<br />
+    main.error = null;</p>
+<pre><code>extractAndParse(files[0])
+  .then(function (file) {
+    main.file = file;
+    console.log('main', main.file);
+  }, function(reason){
+    main.error = reason.message;
+  });
+</code></pre>
+<p>};<br />
+}]);<br />
+[/js]</p>
+<p>The HTML for the error looks like this.</p>
+<p>{% highlight html %}</p>
+<div class="alert alert-danger" role="alert" ng-if="main.error"><strong>Uh oh!</strong> {{main.error}}</div>
+<p>{% endhighlight %}</p>
+<p>And if we are successful then we are going to do something arbitrary like display the dependencies in a table.</p>
+<p>{% highlight html %}</p>
+<div ng-if="main.file">
+<table class="table table-striped">
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Version</th>
+</tr>
+</thead>
+<tbody>
+<tr ng-repeat="(dependency, version) in main.file.dependencies">
+<th>{{dependency}}</th>
+<td>{{version}}</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<pre ng-bind="main.file | json"></pre>
+</div>
+<p>{% endhighlight %}</p>
+<p>I am also dumping the contents of the <strong>package.json</strong> file just for fun as you can see in the <strong>pre</strong> tags.</p>
+<h2>Resources</h2>
+<p>This concludes a super fun session of "Hey! I wonder if we could actually do that..." and I hope you have learned how to do something new and can think of some clever ways to use this in your own projects. Again, a huge shout out to Geoff for doing a lot of the initial heavy lifting. He is super fun to hack with and I hope we get to do more of it. #highFive</p>
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/FileReader" title="FileReader Documentation" target="_blank">FileReader Documentation</a></p>
+<p><a href="https://stuk.github.io/jszip/" title="JSZip Homepage" target="_blank">JSZip Homepage</a></p>
+<p>[button link="http://plnkr.co/edit/WVfxDta2GSC9zwLFuvt2?p=preview" size="large" window="yes"]Demo[/button]</p>

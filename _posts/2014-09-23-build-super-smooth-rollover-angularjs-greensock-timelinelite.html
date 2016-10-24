@@ -1,0 +1,194 @@
+---
+layout: post
+title: Build a Super Smooth Rollover with AngularJS and Greensock TimelineLite
+date: 2014-09-23 18:52:33.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- Greensock
+- JavaScript
+- jQuery
+- UI
+tags: []
+meta:
+  _edit_last: '8'
+  _thumbnail_id: '889'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>Before I was a 'modern web application developer', I actually learned how to program in Flash and then Flex. Platform rhetoric aside, the Flash guys are the original gangstas when it comes to slick, animated user interfaces. In this post, I want to show you a technique for doing smooth rollovers that I have been using for years on a Flash timeline and how I was able to replicate it with Greensock's TimelineLite with surprisingly little effort. The idea is that you lay your animations out on a 'timeline' and when the user mouses over the element the timeline begins to play and on mouse out the timeline plays the timeline in reverse. This creates a really nice animation by having the outro animation be the exact opposite of the intro animation. Mouse over the demo below for an example.</p>
+<h3>Demo</h3>
+<p>[iframe src="http://onehungrymind.com/demos/timeline-button/" height="300px"]</p>
+<p>Download the code below to play with my idea and post your result in the comments for 'valuable prizes'.</p>
+<p>[button link="https://github.com/simpulton/angularjs-timeline-button" size="large" window="yes"]Code[/button]</p>
+<p></p>
+<h3>Include the Javascripts</h3>
+<p>To make this animation work, we need to include <strong>jQuery</strong>, <strong>TweenMax</strong> and <strong>AngularJS</strong> in our HTML file. The entire animation effect is going to be encapsulated into a directive that we will put in our <strong>app.js</strong> file.</p>
+<p>{% highlight html %}<br />
+<body><br />
+    <!-- Omitted --></p>
+<pre><code>&lt;script src="//code.jquery.com/jquery-1.11.1.min.js"&gt;&lt;/script&gt;
+&lt;script src="//cdnjs.cloudflare.com/ajax/libs/gsap/1.13.1/TweenMax.min.js"&gt;&lt;/script&gt;
+&lt;script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.0-rc.0/angular.min.js"&gt;&lt;/script&gt;
+&lt;script src="js/app.js"&gt;&lt;/script&gt;
+</code></pre>
+<p></body><br />
+{% endhighlight %}</p>
+<h3>Create the Smooth Button Template</h3>
+<p>Because this is a fairly focused and small example, I wanted to abstract the button HTML to keep the DOM clean but I didn't really want to create an external template since this is not a 'real' project. AngularJS allows you to define a template in a script tag with the type of <strong>text/ng-template</strong> and a string id to identify it later. In this case, we are going to call it <strong>smooth-button.tmpl.html</strong> which we will reference in the <strong>smoothButton</strong> directive in a moment.</p>
+<p>{% highlight html %}<br />
+<body><br />
+    <!-- Omitted --></p>
+<pre><code>&lt;script type="text/ng-template" id="smooth-button.tmpl.html"&gt;
+    &lt;div class="circle red"&gt;&lt;/div&gt;
+    &lt;div class="circle orange"&gt;&lt;/div&gt;
+    &lt;div class="circle yellow"&gt;&lt;/div&gt;
+    &lt;div class="circle grey"&gt;&lt;/div&gt;
+&lt;/script&gt;
+&lt;!-- Omitted --&gt;
+</code></pre>
+<p></body><br />
+{% endhighlight %}</p>
+<p>The layout for the button is essentially four colored circles that are going to lay on top of each other. To see the circles individually, take off the <strong>position: absolute</strong> on the circle class and you will have something that looks like the image below.</p>
+<p><img src="{{ site.baseurl }}/img/timeline-shapes-300x238.png" alt="Timeline Shapes" width="300" height="238" class="alignnone size-medium wp-image-890" /></p>
+<p>[css]<br />
+.circle {<br />
+    border-radius: 50%;<br />
+    width: 100px;<br />
+    height: 100px;<br />
+    position: absolute;<br />
+}</p>
+<p>.yellow {<br />
+    background-color: #ffff00;<br />
+}</p>
+<p>.orange {<br />
+    background-color: orange;<br />
+}</p>
+<p>.red {<br />
+    background-color: red;<br />
+}</p>
+<p>.grey {<br />
+    background-color: grey;<br />
+}<br />
+[/css]</p>
+<p>We are also giving each circle a color by assigning a color class to it as well.</p>
+<h3>Create the Smooth Button Directive</h3>
+<p>Now that we have the template defined, we can create the smoothButton directive and reference it in the directive definition object (DDO) via <strong>templateUrl: 'smooth-button.tmpl.html'</strong>. One of the interesting 'features' of AngularJS directives is that they share a single scope object by default. This is why I have defined <strong>scope: true</strong> on the DDO so that each directive instance gets its own child scope. This allows us to modify one directive without it updating all of the other directives. #proTip!</p>
+<p>[js]<br />
+var app = angular.module('website', []);</p>
+<p>app.directive('smoothButton', function(){<br />
+    var linker = function (scope, element, attrs) {<br />
+        // Omitted<br />
+    };</p>
+<pre><code>return {
+    scope: true,
+    link: linker,
+    templateUrl: 'smooth-button.tmpl.html'
+}
+</code></pre>
+<p>});<br />
+[/js]</p>
+<h3>Define the TimelineLite Instance</h3>
+<p>And now we are going to create a TimelineLite instance on the <strong>tl</strong> variable so that we can act upon it when the user interacts with the directive. Once <strong>tl</strong> is defined, we are going to call <strong>tl.stop()</strong> so that the <strong>tl</strong> does not automatically play the animation sequence. We are also going to expose two methods on <strong>scope</strong> called <strong>scope.play</strong> and <strong>scope.reverse</strong> that act as a proxy to <strong>tl.play</strong> and <strong>tl.reverse</strong>, respectively. This will allow us to control the playback of the animations that we add to the <strong>TimelineLite</strong> instance.</p>
+<p>[js]<br />
+var app = angular.module('website', []);</p>
+<p>app.directive('smoothButton', function(){<br />
+    var linker = function (scope, element, attrs) {<br />
+        var tl = new TimelineLite();<br />
+        // Omitted<br />
+        tl.stop();</p>
+<pre><code>    scope.play = function() {
+        tl.play();
+    };
+
+    scope.reverse = function() {
+        tl.reverse();
+    };
+};
+
+return {
+    scope: true,
+    link: linker,
+    templateUrl: 'smooth-button.tmpl.html'
+}
+</code></pre>
+<p>});<br />
+[/js]</p>
+<h3>Smooth Button Enter Stage Left</h3>
+<p>We will now add three <strong>smoothButton</strong> instances to our layout by creating three <strong>div</strong> tags and adding <strong>smooth-button</strong> as an attribute. Remember that AngularJS converts camel case to snake case in HTML which is why it went from <strong>smoothButton</strong> to <strong>smooth-button</strong>.</p>
+<p>{% highlight html %}<br />
+<body></p>
+<div smooth-button class="container" ng-mouseenter="play()" ng-mouseleave="reverse()"></div>
+<div smooth-button class="container" ng-mouseenter="play()" ng-mouseleave="reverse()"></div>
+<div smooth-button class="container" ng-mouseenter="play()" ng-mouseleave="reverse()"></div>
+<pre><code>&lt;!-- Omitted --&gt;
+</code></pre>
+<p></body><br />
+{% endhighlight %}</p>
+<p>And now we can invoke the <strong>play</strong> method by calling <strong>ng-mouseenter="play()"</strong> and the <strong>reverse</strong> method by calling <strong>ng-mouseleave="reverse()"</strong>.</p>
+<h3>Grand Finale: Show Me The Animations!</h3>
+<p>And now the only thing left to do is add the animations. <strong>TimelineLite</strong> makes this really easy by providing an <strong>add</strong> method that we can use to add our animations. We are going to use <strong>TweenLite.to</strong> to animate the red, orange and yellow circles. Because <strong>element</strong> is a jQuery object, we can query <strong>element</strong> to get us the circle we want such as <strong>element.find('.red')</strong> to fetch the red circle. We will set the duration of all three animations to <strong>0.4</strong> seconds to keep things lively and we are going to set a negative delay on the last two animations by adding <strong>'-=0.2'</strong> as the last parameter. Timeline animations are generally sequential but you can cause them to overlap with a negative delay. #proTip!</p>
+<p>Now that we know <strong>WHO</strong> we are animating and <strong>WHEN</strong> it is all going down, it is time to define the <strong>WHAT</strong>. For each circle, we want to increase width and height by some number and we can do this with <strong>scaleX</strong> and <strong>scaleY</strong>. Also, we want to make it pretty so we use <strong>Power2.easeOut</strong> as our easing function. Hooray!</p>
+<p>[js]<br />
+var app = angular.module('website', []);</p>
+<p>app.directive('smoothButton', function(){<br />
+    var linker = function (scope, element, attrs) {<br />
+        var tl = new TimelineLite();<br />
+        tl.add(TweenLite.to(element.find('.red'), 0.4, {scaleX:1.8, scaleY:1.8, ease: Power2.easeOut}));<br />
+        tl.add(TweenLite.to(element.find('.orange'), 0.4, {scaleX:1.6, scaleY:1.6, ease: Power2.easeOut}), '-=0.2');<br />
+        tl.add(TweenLite.to(element.find('.yellow'), 0.4, {scaleX:1.4, scaleY:1.4, ease: Power2.easeOut}), '-=0.2');<br />
+        tl.stop();</p>
+<pre><code>    scope.play = function() {
+        tl.play();
+    };
+
+    scope.reverse = function() {
+        tl.reverse();
+    };
+};
+
+return {
+    scope: true,
+    link: linker,
+    templateUrl: 'smooth-button.tmpl.html'
+}
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And the HTML in its entirety.</p>
+<p>{% highlight html %}<br />
+<body></p>
+<div smooth-button class="container" ng-mouseenter="play()" ng-mouseleave="reverse()"></div>
+<div smooth-button class="container" ng-mouseenter="play()" ng-mouseleave="reverse()"></div>
+<div smooth-button class="container" ng-mouseenter="play()" ng-mouseleave="reverse()"></div>
+<pre><code>&lt;script type="text/ng-template" id="smooth-button.tmpl.html"&gt;
+    &lt;div class="circle red"&gt;&lt;/div&gt;
+    &lt;div class="circle orange"&gt;&lt;/div&gt;
+    &lt;div class="circle yellow"&gt;&lt;/div&gt;
+    &lt;div class="circle grey"&gt;&lt;/div&gt;
+&lt;/script&gt;
+
+&lt;script src="//code.jquery.com/jquery-1.11.1.min.js"&gt;&lt;/script&gt;
+&lt;script src="//cdnjs.cloudflare.com/ajax/libs/gsap/1.13.1/TweenMax.min.js"&gt;&lt;/script&gt;
+&lt;script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.0-rc.0/angular.min.js"&gt;&lt;/script&gt;
+&lt;script src="js/app.js"&gt;&lt;/script&gt;
+</code></pre>
+<p></body><br />
+{% endhighlight %}</p>
+<h2>Review</h2>
+<p>For a quick review, we were able to encapsulate an interesting animation within a directive and then control playback via the TimelineLite API. In this example, we used circles but you could <strong>easily</strong> change this by defining other shapes via CSS and swapping them out.</p>
+<p>One of my primary goals as I share the things that I have learned is to not only present them in such a simple way that anyone can get them but also leave the stage wide open for you to extend my ideas into anything you want. So for homework, grab the code and post a variation. I would love to see it!</p>
+<h2>Resources</h2>
+<p><a href="https://www.greensock.com/get-started-js/" title="Getting Started with the JavaScript Version of the GreenSock Animation Platform (GSAP)" target="_blank">Getting Started with the JavaScript Version of the GreenSock Animation Platform (GSAP)</a></p>
+<p><a href="http://greensock.com/timelinelite" title="Greensock TimelineLite Documentation" target="_blank">Greensock TimelineLite Documentation</a></p>
+<p>[button link="https://github.com/simpulton/angularjs-timeline-button" size="large" window="yes"]Code[/button]</p>

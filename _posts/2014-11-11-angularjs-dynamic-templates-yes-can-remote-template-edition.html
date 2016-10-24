@@ -1,0 +1,169 @@
+---
+layout: post
+title: AngularJS Dynamic Templates - Yes We Can! Remote Template Edition
+date: 2014-11-11 18:45:51.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+tags: []
+meta:
+  _edit_last: '8'
+  _thumbnail_id: '505'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Goal</h2>
+<p>This is the sequel to my <a href="http://onehungrymind.com/angularjs-dynamic-templates/" title="AngularJS Dynamic Templates – Yes We Can!" target="_blank">AngularJS Dynamic Templates - Yes We Can!</a> post which, to my surprise, has received a fair amount of attention. The number one question I get regarding that post is "This is great! But! How can I do this with remote templates?" and so I wanted to finally address that question with a way to compile dynamic templates using remote resources. I also updated the repository to AngularJS 1.3 as it was originally built on AngularJS 1.0.1! Yikes! Welcome to the future!</p>
+<p>Before we get started, I want to make it clear that there are a few other ways to do this such as using <strong>ng-switch</strong>, <strong>ng-if</strong>, etc. I think that is fine if you have a few templates but if would turn into a DOM nightmare if you had to dynamically render like 40 templates. Also, using $compile to cook your AngularJS templates is pretty low level and so it gives you the ability to dynamically compose some pretty interesting layouts. For instance, you could dynamically pull a header template, body template and footer template based on some business logic and then dynamically compile them into a single template at runtime. As with all my posts, my goal is to show one possible way of doing something so that you have one more tool in your toolbox to build awesome things.</p>
+<p>With that said, grab the code, check out the demo, and let's roll!</p>
+<p>[button link="http://onehungrymind.com/demos/angular-dynamic-templates/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angular-dynamic-templates" size="large" window="yes"]Code[/button]</p>
+<h2>The Template Service</h2>
+<p>The first thing we need to do is to set up a service to retrieve our remote templates. We will create a service called <strong>TemplateService</strong> with a single method called <strong>getTemplates</strong>.</p>
+<p>[js]<br />
+app.constant('URL', 'data/');</p>
+<p>app.factory('TemplateService', function ($http, URL) {<br />
+    var getTemplates = function () {<br />
+        return $http.get(URL + 'templates.json');<br />
+    };</p>
+<pre><code>return {
+    getTemplates: getTemplates
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And in the <strong>getTemplates</strong> method, we are going to return the results of <strong>$http.get</strong>, which will be the contents of <strong>templates.json</strong>, which we can see in an abbreviated form below:</p>
+<p>[js]<br />
+{<br />
+  "imageTemplate": "</p>
+<p>&lt;</p>
+<p>div class='entry-photo'>...",<br />
+  "videoTemplate": "</p>
+<p>&lt;</p>
+<p>div class='entry-video'>...",<br />
+  "noteTemplate": "</p>
+<p>&lt;</p>
+<p>div class='entry-note'>..."<br />
+}<br />
+[/js]</p>
+<h2>Content Item Directive</h2>
+<p>Now that we have created a way to pull in the remote templates, we need to consume them in the <strong>contentItem</strong> directive. We will start out by injecting the <strong>TemplateService</strong> into the directive and then calling <strong>TemplateService.getTemplates</strong> in the <strong>linker</strong> function.</p>
+<p>Upon completion of the call, we are assigning <strong>response.data</strong> to our <strong>templates</strong> variable to be passed into the <strong>getTemplate</strong> method. We are also passing the content type of the current <strong>content</strong> item as a second parameter to <strong>getTemplate</strong> via <strong>scope.content.content_type</strong>.</p>
+<p>[js]<br />
+app.directive('contentItem', function ($compile, TemplateService) {<br />
+    //...</p>
+<pre><code>var linker = function (scope, element, attrs) {
+    scope.rootDirectory = 'images/';
+
+    TemplateService.getTemplates().then(function (response) {
+        var templates = response.data;
+
+        element.html(getTemplate(templates, scope.content.content_type));
+
+        $compile(element.contents())(scope);
+    });
+};
+
+//...
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>We are then taking the result of <strong>getTemplate</strong> (which is essentially a string template) and inserting it into the <strong>element</strong> that our <strong>contentItem</strong> directive was declared on. We have inserted the template into the <strong>element</strong>, but up until this point it is hasn't been compiled into a 'living, breathing' AngularJS template. This is where the <strong>$compile</strong> service comes in as we can take HTML and a <strong>scope</strong> object and 'zip' them up to breathe life into our template. The vital line of code to make this happen is <strong>$compile(element.contents())(scope)</strong>.</p>
+<blockquote><p>
+This technique also translates really well to testing when you want to spin up directives and templates and bind them to $scope.</p>
+<p>[js]<br />
+element = angular.element('
+<div my-directive></div>
+<p>');<br />
+$compile(element)($rootScope)<br />
+expect(element.scope().cube(3)).toBe(27);<br />
+[/js]</p>
+</blockquote>
+<p>And just to lock this down, we will take a quick look at the <strong>getTemplate</strong> method. This is a pretty straightforward <strong>switch</strong> statement that returns the appropriate template, although this could be condensed quite a bit if someone were so inclined.</p>
+<p>[js]<br />
+app.directive('contentItem', function ($compile, TemplateService) {<br />
+    var getTemplate = function (templates, contentType) {<br />
+        var template = '';</p>
+<pre><code>    switch (contentType) {
+        case 'image':
+            template = templates.imageTemplate;
+            break;
+        case 'video':
+            template = templates.videoTemplate;
+            break;
+        case 'notes':
+            template = templates.noteTemplate;
+            break;
+    }
+
+    return template;
+};
+//...
+</code></pre>
+<p>});<br />
+[/js]</p>
+<h2>Strict Contextual Escaping</h2>
+<p>By upgrading to AngularJS 1.3, we need to turn one more dial to get this working. As of AngularJS 1.2, strict contextual escaping was turned on by default meaning that certain bindings had to be explicitly marked as safe by the developer. If you are dealing with a potentially sensitive situation then it is important to take this seriously but in our case we are just going to sidestep it by whitelisting all domains as safe.</p>
+<p>In our config block, we accomplish this by adding in this line <strong>$sceDelegateProvider.resourceUrlWhitelist(['self', '**']);</strong>.</p>
+<p>[js]<br />
+app.config(function ($sceDelegateProvider) {<br />
+    $sceDelegateProvider.resourceUrlWhitelist(['self', '**']);<br />
+});<br />
+[/js]</p>
+<p>And that is it! We are now loading our templates via a remote JSON file and compiling them into our application at runtime.</p>
+<h2>Bonus: Remote HTML Templates</h2>
+<p>Since we have come this far, let us go for a bonus round by showing how to do this using HTML templates. If you hop on to the <a href="https://github.com/simpulton/angular-dynamic-templates/tree/remote-files" title="Remote Files Branch" target="_blank">remote-files</a> branch of the repository, you will find the code below.</p>
+<p>We are going to modify the <strong>TemplateService</strong> to return the actual HTML template itself. We have an HTML template in the <strong>templates</strong> directory and we are using the <strong>content</strong> parameter to generate the endpoint URL for the template.</p>
+<p>[js]<br />
+app.factory('TemplateService', function ($http) {<br />
+    var getTemplate = function (content) {<br />
+        return $http.get('templates/' + content + '.html');<br />
+    };</p>
+<pre><code>return {
+    getTemplate: getTemplate
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>From here, we are calling <strong>element.html</strong> and passing in <strong>response.data</strong> which is the markup from our <strong>TemplateService</strong> call.</p>
+<p>[js]<br />
+app.directive('contentItem', function ($compile, TemplateService) {<br />
+    var linker = function (scope, element, attrs) {<br />
+        scope.rootDirectory = 'images/';</p>
+<pre><code>    TemplateService.getTemplate(scope.content.content_type).then(function (response) {
+        element.html(response.data);
+        $compile(element.contents())(scope);
+    });
+};
+
+//...
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And then $compile! #missionAccomplished.</p>
+<h2>Review</h2>
+<p>In a nutshell, we are doing three things to get remote templates to work.</p>
+<ol>
+<li>Retrieve the remote templates via the TemplateService.</li>
+<li>Inserting the correct template into the directive's element by calling element.html.</li>
+<li>Call $compile to 'zip' up the new HTML with the directive's scope object.</li>
+</ol>
+<p>You will also need to dial in strict context escaping depending on your needs.</p>
+<p>Let me know what you think in the comments below and if someone is up for the challenge, I would love to see a totally dynamic version where you would not have to update the directive every time you added a new content type.</p>
+<h2>Resources</h2>
+<p><strong>$compile Documentation</strong><br />
+<a href="https://docs.angularjs.org/api/ng/service/$compile" title="$compile Documentation" target="_blank">https://docs.angularjs.org/api/ng/service/$compile</a></p>
+<p><strong>$sce Documentation</strong><br />
+<a href="https://docs.angularjs.org/api/ng/service/$sce" title="$sce Documentation" target="_blank">https://docs.angularjs.org/api/ng/service/$sce</a></p>
+<p>[button link="http://onehungrymind.com/demos/angular-dynamic-templates/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angular-dynamic-templates" size="large" window="yes"]Code[/button]</p>

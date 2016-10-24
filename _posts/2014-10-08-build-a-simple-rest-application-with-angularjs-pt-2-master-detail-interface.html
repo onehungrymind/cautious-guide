@@ -1,0 +1,316 @@
+---
+layout: post
+title: Build a Simple REST Application with AngularJS Pt 2 Master Detail Interface
+date: 2014-10-08 18:20:15.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '902'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Project</h2>
+<p>Welcome back to the second part of the "Build a Simple REST Application with AngularJS" series where we will build out a  <a href="http://en.wikipedia.org/wiki/Master%E2%80%93detail_interface" title="Master Detail Interface" target="_blank">master-detail interface</a> in AngularJS based on the REST API we built in the <a href="http://onehungrymind.com/build-simple-rest-app-angularjs-part-1-node-api-strongloop/" title="Build a Simple REST Application with AngularJS Pt 1 Node API with Strongloop" target="_blank">previous post</a>. Be sure to check out the first part of this series to get up to speed and then let's rock!</p>
+<p>The code is divided into two repositories – the API and the website that consumes the API. We are going to be focusing on the code in the Simple REST Website repository.</p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]Simple REST API[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-website" size="large" window="yes"]Simple REST Website[/button]</p>
+<h2>Listing the Items</h2>
+<p>We are going to work through the standard CRUD functionality, starting with reading (or listing) the existing items. We covered the <strong>ItemsService</strong> in the first part of the series but we will examine it in the context of the data flowing from the server to the view.</p>
+<p>We have abstracted the URI to its own constant service called <strong>ENDPOINT_URI</strong> so that if we need to change it later, we only have to do it in one place.</p>
+<p>[js]<br />
+angular.module('SimpleRESTWebsite', [])<br />
+  .constant('ENDPOINT_URI', 'http://localhost:3000/api/')<br />
+[/js]</p>
+<p>We then inject the <strong>ENDPOINT_URI</strong> into the <strong>ItemsModel</strong> and use the <strong>path</strong> variable and <strong>getUrl</strong> method to generate our URL to get the items from the API.</p>
+<p>Then we make a GET request to that endpoint and return the results via <strong>return $http.get(getUrl())</strong>.</p>
+<p>[js]<br />
+.service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+  var service = this,<br />
+  path = 'items/';</p>
+<p>function getUrl() {<br />
+    return ENDPOINT_URI + path;<br />
+  }</p>
+<p>service.all = function () {<br />
+    return $http.get(getUrl());<br />
+  };<br />
+})<br />
+[/js]</p>
+<p>Calling <strong>getUrl</strong> will return a url of <a href="http://localhost:3000/api/items" target="_blank">http://localhost:3000/api/items</a>. This will return a JSON structure similar to the one below, provided that there are items in the database.</p>
+<p><img src="{{ site.baseurl }}/img/items-json.png" alt="Items JSON" width="724" height="400" class="alignnone size-full wp-image-907" /></p>
+<p>The <strong>$http</strong> service returns a <strong>promise</strong> object which we utilize in the <strong>getItems</strong> method in the <strong>MainCtrl</strong>.</p>
+<blockquote><p>
+Promises can be a bit hard to understand but <a href="http://andyshora.com/promises-angularjs-explained-as-cartoon.html" title="AngularJS Promises" target="_blank">here</a> is a really good explanation by Andy Shora. In a cartoon!
+</p></blockquote>
+<p>Promises are an entire discussion unto themselves, but I will try to elaborate just enough for us to understand how we are consuming them in the <strong>MainCtrl</strong>. Promises are used to represent an asynchronous operation that will be resolved in the future; and when it happens, <strong>then</strong> we are allowed to act upon the resolution of that operation. This resolution conveniently happens in the form of a <strong>then</strong> method being called, with the first parameter being the success handler of the operation. The success handler receives a single parameter which is the <strong>result</strong> of the operation. The <strong>result</strong> object has plenty of interesting information about the server call we just made, but the property we are most interested in is the <strong>data</strong> property, which has the JSON object from the server.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>function getItems() {<br />
+    ItemsModel.all()<br />
+      .then(function (result) {<br />
+        main.items = result.data;<br />
+      });<br />
+  }</p>
+<p>main.items = [];<br />
+  main.getItems = getItems;</p>
+<p>getItems();<br />
+})<br />
+[/js]</p>
+<p>We then assign <strong>result.data</strong> to <strong>main.items</strong>, which we will use to display the items in just a moment. The call to the <strong>ItemsModel</strong> service is wrapped in the <strong>getItems</strong> method which we call at the bottom of <strong>MainCtrl</strong> to get things started.</p>
+<p>And now that we have <strong>items</strong> populated in the <strong>MainCtrl</strong>, we can use <strong>ng-repeat</strong> to iterate over the <strong>items</strong> collection.</p>
+<p>{% highlight html %}<br />
+<body ng-controller="MainCtrl as main"></p>
+<div class="container-fluid">
+<div class="row">
+<div class="col-md-4">
+<div class="item" ng-repeat="item in main.items">
+<h3>{{item.name}}</h3>
+<p>          <strong>{{item.description}}</strong>
+        </div>
+</p></div>
+<div class="col-md-8">
+        <!-- CREATE ITEM FORM --><br />
+        <!-- EDIT ITEM FORM -->
+      </div>
+</p></div>
+</p></div>
+<p><script src="app/app.js"></script><br />
+</body><br />
+{% endhighlight %}</p>
+<p>We do this with <strong>ng-repeat="item in main.items"</strong> and then use the double curly braces to bind and display <strong>item.name</strong> and <strong>item.description</strong>. This will produce a result similar to the picture below.</p>
+<p><img src="{{ site.baseurl }}/img/list-items.png" alt="List Items" width="600" height="315" class="alignnone size-full wp-image-901" /></p>
+<h2>Creating an Item</h2>
+<p><img src="{{ site.baseurl }}/img/create-an-item.png" alt="Create an Item" width="1024" height="303" class="alignnone size-full wp-image-903" /></p>
+<p>Now that we have created the ability to display items in our view we are going to create the functionality and interface to create items.</p>
+<p>Interfacing with the API in the <strong>ItemsModel</strong> requires just a small augmentation to make it work. Instead of a GET operation, we need to perform a POST operation; so we will use the <strong>$http.post</strong> method and pass in a new <strong>item</strong> object as the payload. We expose this functionality with the <strong>create</strong> method on the service.</p>
+<p>[js]<br />
+.service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+  //...</p>
+<p>service.create = function (item) {<br />
+    return $http.post(getUrl(), item);<br />
+  };<br />
+})<br />
+[/js]</p>
+<p>We then call <strong>ItemsModel.create</strong> and pass in a new <strong>item</strong> object from the <strong>MainCtrl</strong>.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>function createItem(item) {<br />
+    ItemsModel.create(item)<br />
+      .then(function (result) {});<br />
+  }</p>
+<p>main.createItem = createItem;<br />
+})<br />
+[/js]</p>
+<p>So the question is... where does the new <strong>item</strong> object come from? Thanks for asking! We are going to create an empty object and assign it to the <strong>main.newItem</strong> variable.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>function createItem(item) {<br />
+    ItemsModel.create(item)<br />
+      .then(function (result) {});<br />
+  }</p>
+<p>main.newItem = { name: '', description: '' };<br />
+  main.createItem = createItem;<br />
+})<br />
+[/js]</p>
+<p>This allows us to bind our creation form to main.newItem and control it from the same. We have two text fields which we will use <strong>ng-model</strong> to bind to the <strong>name</strong> and <strong>description</strong> properties of the <strong>main.newItem</strong> object.</p>
+<p>{% highlight html %}</p>
+<form class="create-form" role="form" ng-submit="main.createItem(main.newItem)" novalidate>
+<div class="form-group">
+    <label>Item Name</label><br />
+    <input type="text" class="form-control" ng-model="main.newItem.name" placeholder="Enter name" />
+  </div>
+<div class="form-group">
+    <label>Item Description</label><br />
+    <input type="text" class="form-control" ng-model="main.newItem.description" placeholder="Enter description" />
+  </div>
+<p>  <button type="submit" class="btn btn-info btn-lg">Create</button><br />
+</form>
+<p>{% endhighlight %}</p>
+<p>When we enter text in either of these fields, the <strong>main.newItem</strong> object is updated immediately. And when the <strong>submit</strong> button is clicked or <strong>enter</strong> is pressed, we use <strong>ng-submit</strong> to call <strong>main.createItem</strong> and pass in <strong>main.newItem</strong> for processing.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>function createItem(item) {<br />
+    ItemsModel.create(item)<br />
+      .then(function (result) {<br />
+        initCreateForm();<br />
+        getItems();<br />
+      });<br />
+  }</p>
+<p>function initCreateForm() {<br />
+    main.newItem = { name: '', description: '' };<br />
+  }</p>
+<p>main.createItem = createItem;<br />
+  initCreateForm();<br />
+})<br />
+[/js]</p>
+<p>The final question before wrapping up the task of creating items is what do we do after the item has been successfully created? In our case, we are going to reset the create form by calling <strong>initCreateForm</strong> and refresh our items by calling <strong>getItems</strong>. The beauty of separating out the state of a form into a simple object is that we can reset the entire form by resetting the object it is bound to. This is exactly what we are doing inside <strong>initCreateForm</strong> with this expression: <strong>main.newItem = { name: '', description: '' }</strong>.</p>
+<h2>Updating an Item</h2>
+<p><img src="{{ site.baseurl }}/img/edit-an-item.png" alt="Edit an Item" width="1024" height="304" class="alignnone size-full wp-image-905" /></p>
+<p>We now have the ability to create an item, so the next step is to add the ability to edit an existing item. This is going to be very similar to the techniques that we used to create an item, so I am going to point out the differences and then focus on how we can navigate between creating an item and editing an existing item.</p>
+<p>The most obvious difference is that we need to use a different API call to the server to update the item. This is a PUT operation and the URL that we need to generate is going to be specific to the item we are editing. We are able to generate the appropriate URL by adding in another helper function called <strong>getUrlForId</strong> that wraps <strong>getUrl</strong> and appends <strong>itemId</strong>.</p>
+<p>[js]<br />
+.service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+  //...</p>
+<p>function getUrlForId(itemId) {<br />
+    return getUrl(path) + itemId;<br />
+  }<br />
+  service.update = function (itemId, item) {<br />
+    return $http.put(getUrlForId(itemId), item);<br />
+  };<br />
+})<br />
+[/js]</p>
+<p>The form for editing an item is almost identical to the creation form with two differences. First, the form is bound to <strong>main.editedItem</strong> and second, we have a cancel button that calls <strong>main.cancelEditing</strong> to exit the editing state.</p>
+<p>{% highlight html %}</p>
+<form class="edit-form" role="form" ng-submit="main.updateItem(main.editedItem)" novalidate>
+<div class="form-group">
+    <label>Item Name</label><br />
+    <input type="text" class="form-control" ng-model="main.editedItem.name" placeholder="Enter name" />
+  </div>
+<div class="form-group">
+    <label>Bookmark URL</label><br />
+    <input type="text" class="form-control" ng-model="main.editedItem.description" placeholder="Enter description" />
+  </div>
+<p>  <button type="submit" class="btn btn-info btn-lg">Save</button><br />
+  <button type="button" class="btn btn-default btn-lg pull-right" ng-click="main.cancelEditing()">Cancel</button><br />
+</form>
+<p>{% endhighlight %}</p>
+<p>When we click on an item from our list, <strong>main.setEditedItems</strong> is called, which in turn sets <strong>main.editedItem</strong> to the selected item that we passed in.</p>
+<p>{% highlight html %}</p>
+<p>&lt;</p>
+<p>div class="item" ng-repeat="item in main.items"<br />
+    ng-click="main.setEditedItem(item)"><br />
+{% endhighlight %}</p>
+<p>In the <strong>setEditedItem</strong> method, we take the <strong>item</strong> parameter and, using <strong>angular.copy</strong>, we assign the result to <strong>main.editedItem</strong>. The reason we are working with a copy is so that our changes are not immediately applied and we can cancel the operation. We are also setting the <strong>isEditing</strong> flag (which we will use to toggle the editing state in the view) to <strong>true</strong>.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>//...</p>
+<p>function setEditedItem(item) {<br />
+    main.editedItem = angular.copy(item);<br />
+    main.isEditing = true;<br />
+  }</p>
+<p>main.editedItem = null;<br />
+  main.isEditing = false;<br />
+  main.setEditedItem = setEditedItem;<br />
+})<br />
+[/js]</p>
+<p>We now have a way to get into an editing state, so let us introduce the ways to get out of the editing state. We will create a method called <strong>cancelEditing</strong> which sets <strong>isEditing</strong> to <strong>false</strong> and <strong>editedItem</strong> to <strong>null</strong>. We also want to exit the editing state when a user has successfully updated an item, so on the success handler of <strong>ItemsModel.update</strong> we will call <strong>cancelEditing</strong>, as well as refresh our list by calling <strong>getItems</strong>.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>function updateItem(item) {<br />
+    ItemsModel.update(item.id, item)<br />
+      .then(function (result) {<br />
+        cancelEditing();<br />
+        getItems();<br />
+      });<br />
+  }</p>
+<p>function setEditedItem(item) {<br />
+    main.editedItem = angular.copy(item);<br />
+    main.isEditing = true;<br />
+  }</p>
+<p>function cancelEditing() {<br />
+    main.editedItem = null;<br />
+    main.isEditing = false;<br />
+  }</p>
+<p>main.editedItem = null;<br />
+  main.isEditing = false;<br />
+  main.updateItem = updateItem;<br />
+  main.setEditedItem = setEditedItem;<br />
+  main.cancelEditing = cancelEditing;<br />
+})<br />
+[/js]</p>
+<p>In the view, we use <strong>ng-if</strong> to toggle between the create and edit form based on the state of <strong>main.isEditing</strong>.</p>
+<p>{% highlight html %}</p>
+<div ng-if="!main.isEditing">
+<h4>Create a New Item</h4>
+<hr />
+  <!-- CREATE FORM -->
+</div>
+<div ng-if="main.isEditing">
+<h4>Editing {{main.editedItem.name}}</h4>
+<hr />
+  <!-- EDITING FORM -->
+</div>
+<p>{% endhighlight %}</p>
+<p>We will wrap up this section by fixing up a small UX issue – giving visual feedback to the user about which item is currently selected. We can detect if an item is the item currently being edited by comparing it with <strong>main.editedItem</strong>. The method <strong>isCurrentItem</strong> will return <strong>true</strong> if we have a match and <strong>false</strong> if we do not.</p>
+<p>[js]<br />
+function isCurrentItem(itemId) {<br />
+  return main.editedItem !== null &amp;&amp; main.editedItem.id === itemId;<br />
+}</p>
+<p>main.isCurrentItem = isCurrentItem;<br />
+[/js]</p>
+<p>And now we can hook this method up to <strong>ng-class</strong> to apply an <strong>active</strong> class if <strong>item.id</strong> matches <strong>main.editedItem.id</strong>.</p>
+<p>{% highlight html %}</p>
+<p>&lt;</p>
+<p>div class="item" ng-repeat="item in main.items"<br />
+    ng-click="main.setEditedItem(item)<br />
+    ng-class="{'active':main.isCurrentItem(item.id)}"><br />
+{% endhighlight %}</p>
+<p>This is admittedly the part of the application that has the most moving parts but we have managed to break it down to the $http call and the edit form. From there, it was just a matter of managing the edit state.</p>
+<h2>Deleting an Item</h2>
+<p>And in a total anti-climatic fashion, we are going to follow up the edit feature with a MUCH simpler delete feature. In this case we need to make a DELETE call, so we will use <strong>$http.delete</strong>, which uses <strong>getUrlForId</strong> to generate the appropriate URL.</p>
+<p>[js]<br />
+.service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+  service.destroy = function (itemId) {<br />
+    return $http.delete(getUrlForId(itemId));<br />
+  };<br />
+})<br />
+[/js]</p>
+<p>And in the success handler of calling <strong>ItemsModel.destroy</strong> we are going to cancel editing and refresh our items.</p>
+<p>[js]<br />
+.controller('MainCtrl', function (ItemsModel) {<br />
+  var main = this;</p>
+<p>function deleteItem(itemId) {<br />
+    ItemsModel.destroy(itemId)<br />
+      .then(function (result) {<br />
+        cancelEditing();<br />
+        getItems();<br />
+      });<br />
+  }</p>
+<p>main.deleteItem = deleteItem;<br />
+})<br />
+[/js]</p>
+<p>In the actual item, we add a close button that calls <strong>main.deleteItem</strong> and passes in <strong>item.id</strong> on <strong>ng-click</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="item" ng-repeat="item in main.items" ng-click="main.setEditedItem(item)" ng-class="{'active':main.isCurrentItem(item.id)}">
+<p>  <button type="button" class="close" ng-click="main.deleteItem(item.id)">&times;</button></p>
+<h3>{{item.name}}</h3>
+<p>  <strong>{{item.description}}</strong>
+</div>
+<p>{% endhighlight %}</p>
+<h2>Review</h2>
+<p>We have just successfully implemented a master detail interface in AngularJS that allows us to perform all of the necessary CRUD operations. Our interface is purposefully simple, but every single web application that I build is based on the ideas that we have covered here.</p>
+<p>Let us do a quick review of the techniques we covered in this lesson.</p>
+<ul>
+<li>We can easily interact with a REST API using the <strong>$http</strong> convenience methods <strong>$http.get</strong>, <strong>$http.post</strong>, <strong>$http.put</strong> and <strong>$http.delete</strong></li>
+<li>The $http service is built on top of promises, so we handle the result of our asynchronous calls in the <strong>then</strong> method.</li>
+<li>It is a good practice to explicitly define the object you want a form to bind as it makes it easier to control and reset.</li>
+<li>Use <strong>angular.copy</strong> when editing to work with the copy so you can defer your changes or cancel them entirely.</li>
+<li>Use <strong>ng-class</strong> to enhance your UX by giving better visual feedback to the user.</li>
+</ul>
+<blockquote><p>
+This is a part in a series of posts on techniques we can use when building out REST applications with AngularJS and there are definitely enhancements we could make. Leave your comments below on ways that we could extend this example to be more useful. 3 2 1 go!
+</p></blockquote>
+<p>Also a big #highFive to my buddy <a href="https://twitter.com/ptraeg" title="Peter Traeg">Peter Traeg</a> for his suggestions around the naming convention of <strong>initCreateForm</strong>.</p>
+<h2>Resources</h2>
+<p><a href="http://strongloop.com/get-started/" title="Getting Starting with StrongLoop" target="_blank">Getting Starting with StrongLoop</a></p>
+<p><a href="https://docs.angularjs.org/api/ng/service/$http" title="$HTTP Documentation" target="_blank">Documentation for $HTTP</a></p>
+<p><a href="https://egghead.io/series/angularjs-app-from-scratch-getting-started" title="AngularJS App from Scratch" target="_blank">AngularJS App from Scratch</a></p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]Simple Rest API[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-website" size="large" window="yes"]Simple Rest Website[/button]</p>

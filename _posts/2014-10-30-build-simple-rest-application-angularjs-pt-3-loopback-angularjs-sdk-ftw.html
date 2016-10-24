@@ -1,0 +1,137 @@
+---
+layout: post
+title: Build a Simple REST Application with AngularJS Pt 3 LoopBack AngularJS SDK
+  FTW
+date: 2014-10-30 14:23:05.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Node
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '942'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>Welcome back to another installment of the of building a simple REST application with AngularJS! In the <a href="http://onehungrymind.com/build-a-simple-rest-application-with-angularjs-pt-2-master-detail-interface/" title="Build a Simple REST Application with AngularJS Pt 2 Master Detail Interface" target="_blank">previous lesson</a>, we learned how to consume a REST API in AngularJS using <strong>$http</strong>. In this lesson, we are going to see an alternate approach using an automatically generated service from the <a href="http://docs.strongloop.com/display/LB/AngularJS+JavaScript+SDK" title="LoopBack AngularJS JavaScript SDK" target="_blank">LoopBack AngularJS SDK</a> that is compatible with <strong>$resource</strong>.</p>
+<blockquote><p>
+If you haven't had a chance to check out <a href="http://onehungrymind.com/build-simple-rest-app-angularjs-part-1-node-api-strongloop/" title="Build a Simple REST Application with AngularJS Pt 1 Node API with StrongLoop" target="_blank">Part 1</a> and <a href="http://onehungrymind.com/build-a-simple-rest-application-with-angularjs-pt-2-master-detail-interface/" title="Build a Simple REST Application with AngularJS Pt 2 Master Detail Interface" target="_blank">Part 2</a> of the series, be sure to check them out first as this post builds heavily on top of them.
+</p></blockquote>
+<p>The project has two parts: the REST API and the website that consumes it. The REST API repository remains unchanged and we will be working from the <strong>angular-sdk</strong> branch of the website repository.</p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]Simple Rest API[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-website/tree/angular-sdk" size="large" window="yes"]Simple Rest Website[/button]</p>
+<h2>Generate the Service</h2>
+<p><img src="{{ site.baseurl }}/img/slc-sdk-cli.png" alt="SLC SDK CLI" width="903" height="104" class="alignnone size-full wp-image-940" /></p>
+<p>The LoopBack AngularJS SDK gives us the ability to generate an AngularJS service based off of our Node.js model using the cli tools that come with the SDK. So just to clarify why I like this, we are able to generate an entire REST API using StrongLoop and THEN! generate an AngularJS service to consume the generated REST API. I do not think code generators are the answer for everything and one should understand what is happening under the hood when the use them but for rote work... I admit... I am lazy and I hate the tedium.</p>
+<blockquote><p>The commands we are going to use are operating on the assumption that the <strong>simple-rest-api</strong> and <strong>simple-rest-website</strong> directories are siblings to each other. If this is not the case, you may need to update the commands appropriately.</p></blockquote>
+<p>The first thing we need to do is to navigate to the folder in the <strong>simple-rest-api</strong> project where we want to generate our service. We will jump into the <strong>client</strong> folder since it is empty and a good of choice as any.</p>
+<p>[raw]<br />
+cd simple-rest-api<br />
+cd client # or wherever you want the generated file to go...client is conveniently empty<br />
+[/raw]</p>
+<p>From here, we are going to use the <strong>lb-ng</strong> command to generate our service. We are telling it to generate our service based on <strong>server.js</strong> and call it <strong>lb-services.js</strong>.</p>
+<p>[raw]<br />
+lb-ng ../server/server.js lb-services.js # path_to_application_js path_to_file_to_write<br />
+[/raw]</p>
+<p>And now we are going to move the generated service into the <strong>app</strong> directory of our <strong>simple-rest-website</strong>.</p>
+<p>[raw]<br />
+mv lb-services.js ../../simple-rest-website/public/app/<br />
+[/raw]</p>
+<p>Phase one of Operation LoopBack SDK complete!</p>
+<h2>AngularJS Integration</h2>
+<p>We need to flip a few switches and turn a few knobs to integrate our service with our AngularJS application.</p>
+<p>We need to include the <strong>angular-resource.min.js</strong> and <strong>lb-services.js</strong> source files into our application.</p>
+<p>{% highlight html %}<br />
+<script src="//code.angularjs.org/1.3.0/angular-resource.min.js"></script><br />
+<script src="app/lb-services.js"></script><br />
+{% endhighlight %}</p>
+<p>Then we inject the <strong>lbServices</strong> submodule into our main application module.</p>
+<p>[js]<br />
+angular.module('SimpleRESTWebsite', ['lbServices'])<br />
+[/js]</p>
+<p>Because we have separated our API and our web application into two distinct parts, we need to update the <strong>urlBase</strong> variable in <strong>lb-services.js</strong> to point to <strong>http://localhost:1337/api</strong> instead of <strong>/api</strong>.</p>
+<p>[js]<br />
+var urlBase = "http://localhost:1337/api";<br />
+[/js]</p>
+<p>Phase two of Operation LoopBack SDK complete!</p>
+<h2>Updating the MainCtrl</h2>
+<p>We need to update the <strong>MainCtrl</strong> to use the <strong>Item</strong> service instead of the <strong>ItemsService</strong>.</p>
+<p>[js]<br />
+angular.module('SimpleRESTWebsite', ['lbServices'])<br />
+    .controller('MainCtrl', function (Item) {<br />
+        //...<br />
+    });<br />
+[/js]</p>
+<p>And then update the <strong>getItems</strong> method to use <strong>Item.find</strong>.</p>
+<p>[js]<br />
+function getItems() {<br />
+    Item.find(<br />
+        function (result) {<br />
+            main.items = result;<br />
+        });<br />
+}<br />
+[/js]</p>
+<p>We will then update <strong>createItems</strong> to use <strong>Item.create</strong>.</p>
+<p>[js]<br />
+function createItem(item) {<br />
+    Item.create(item,<br />
+        function (result) {<br />
+            initCreateForm();<br />
+            getItems();<br />
+        });<br />
+}<br />
+[/js]</p>
+<p>We will modify <strong>updateItem</strong> to use <strong>Item.upsert</strong>. Upsert!? Whaaaa... after a quick Google search I found the explanation below. Thanks Wiki! Although I am going to let you look up <strong>portmanteau</strong> on your own.</p>
+<blockquote><p>
+Some database implementations adopted the term "Upsert" (a portmanteau of update and insert) to a database statement, or combination of statements, that inserts a record to a table in a database if the record does not exist or, if the record already exists, updates the existing record. It is also used to abbreviate the "MERGE" equivalent pseudo-code.
+</p></blockquote>
+<p>[js]<br />
+function updateItem(item) {<br />
+    Item.upsert(item,<br />
+        function (result) {<br />
+            cancelEditing();<br />
+            getItems();<br />
+        });<br />
+}<br />
+[/js]</p>
+<p>We are in the homestretch now... <strong>deleteItem</strong> uses <strong>Item.deleteById</strong>.</p>
+<p>[js]<br />
+function deleteItem(itemId) {<br />
+    Item.deleteById({id: itemId},<br />
+        function (result) {<br />
+            cancelEditing();<br />
+            getItems();<br />
+        });<br />
+}<br />
+[/js]</p>
+<p>Operation LoopBack SDK complete!</p>
+<p><img src="{{ site.baseurl }}/img/slc-sdk.png" alt="SLC SDK" width="847" height="304" class="alignnone size-full wp-image-941" /></p>
+<h2>Review</h2>
+<p>I found working with the <strong>Loopback AngularJS SDK</strong> to be really pleasant and low friction. The AngularJS SDK is installed with the StrongLoop package and so if you are using it to generate your REST API it is REALLY easy to use it to generate your AngularJS services as well.</p>
+<p>The general steps we executed are as follows</p>
+<ol>
+<li>From the command line, start in the directory where you want to generate your service.</li>
+<li>Use <strong>lb-ng</strong> to generate your service</li>
+<li>Move that service into your AngularJS application</li>
+<li>Include <strong>ngResource</strong> and your service into your application.</li>
+<li>Inject the <strong>lbServices</strong> into your AngularJS application.</li>
+<li>Consume your generated service in the appropriate controller.</li>
+</ol>
+<p>I also found the generated service to be very well documented and easy to read so I recommend reading through that as well.</p>
+<h2>Resources</h2>
+<p><a href="http://docs.strongloop.com/display/LB/AngularJS+JavaScript+SDK" title="LoopBack AngularJS SDK Documentation" target="_blank">LoopBack AngularJS SDK Documentation</a></p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]Simple Rest API[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-website/tree/angular-sdk" size="large" window="yes"]Simple Rest Website[/button]</p>

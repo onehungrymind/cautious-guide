@@ -1,0 +1,127 @@
+---
+layout: post
+title: AngularJS Sticky Notes Pt 2 – Isolated Scope
+date: 2012-07-11 22:29:47.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- jQuery
+tags: []
+meta:
+  _edit_last: '8'
+  layout: default
+  hide_post_title: default
+  unlink_post_title: default
+  hide_post_meta: default
+  hide_post_date: default
+  hide_post_image: default
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>Welcome to Part 2 of the AngularJS Sticky Notes series!</p>
+<p>In this blogpost I am going to talk about "isolated" scope as it relates to directives. Directives are one of the most powerful features of AngularJS and yet it can be one of the most confusing aspects of it as well. I believe that part of what makes directives hard to understand are the nuances surrounding scope.</p>
+<p>Scope by default inherits from its parent scope, but this may not be desirable behavior, especially if you are building a re-usable widget. It is important that directives cannot accidentally read or write properties in the parent scope. This is where isolated scope comes in. Isolated scope does not prototypically inherit from the parent scope. It is essentially an island unto itself. So, let's cover the basics of isolated scope and then we will talk about how I used it in the sticky notes application.</p>
+<p>I have prepared an example to illustrate what I am going to be talking about, and you can find it here: <a title="Isolated Scope Fiddle" href="http://jsfiddle.net/simpulton/SPMfT/" target="_blank">http://jsfiddle.net/simpulton/SPMfT/</a></p>
+<p>You can essentially interact with isolated scope in three ways:</p>
+<h2>1. Attributes</h2>
+<p>You can bind a isolated scope property to a DOM attribute. This sets up a one-way databinding from the parent scope to the isolated scope. If the parent scope changes, the isolated scope will reflect that change, but not the other way around. You wire this up using an <strong>@</strong> symbol in your scope property definition in the directive.</p>
+<p><em>Important note: I am binding the attribute <strong>attributeFoo</strong> to a isolated property called <strong>isolatedAttributeFoo</strong>. In most cases it is not necessary to have the properties be different names but I only did this to call out the difference between parent scope and isolated scope.</em></p>
+<p>[js]<br />
+.directive('myComponent', function () {<br />
+    return {<br />
+        scope:{<br />
+            isolatedAttributeFoo:'@attributeFoo',<br />
+        }<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>If both my isolated property and parent property were <strong>attributeFoo</strong>, then I would simply have to do this:</p>
+<p>[js]<br />
+.directive('myComponent', function () {<br />
+    return {<br />
+        scope:{<br />
+            attributeFoo:'@',<br />
+        }<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>One quick note about attribute expressions, the result is always a string since DOM elements are always strings. That is why I am using double curly braces so that string interpolation can happen, as follows:</p>
+<p>{% highlight html %}<br />
+<my-component attribute-foo="{{foo}}"></my-component><br />
+{% endhighlight %}</p>
+<p>Well what happens if you want two-way databinding between parent and isolated scope? Easy enough!</p>
+<h2>2. Bindings</h2>
+<p>This works almost exactly like the previous example except that you use an <strong>=</strong> sign instead of an <strong>@</strong> symbol, as follows:</p>
+<p>[js]<br />
+.directive('myComponent', function () {<br />
+    return {<br />
+        scope:{<br />
+            isolatedBindingFoo:'=bindingFoo',<br />
+        }<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>And if <strong>isolatedBindingFoo</strong> changes then it will update the property that exists in <strong>bindingFoo</strong>. The same special note applies to this example as well. If my properties in parent scope and isolated scope have the same name then the syntax is simplified.</p>
+<p>[js]<br />
+.directive('myComponent', function () {<br />
+    return {<br />
+        scope:{<br />
+            bindingFoo:'=',<br />
+        }<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>But what if I want to call a function on the parent scope from isolated scope? This is a bit more tricky, but it is not going to make a grown man cry over it.</p>
+<h2>3. Expressions</h2>
+<p>The simple part first - to wire this up to call an expression on the parent scope from the isolated scope you use the <strong>&amp;</strong> symbol, like so:</p>
+<p>[js]<br />
+.directive('myComponent', function () {<br />
+    return {<br />
+        scope:{<br />
+            isolatedExpressionFoo:'&amp;'<br />
+        }<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>And now when I call <strong>isolatedExpressionFoo</strong> in my isolated scope it serves as a wrapper to whatever I defined in my directive definition. In this case it is <strong>updateFoo</strong>. If you want to pass data through the function wrapper, you do that by passing your isolated variables through via an object map. This is why my function call looks like this <strong>isolatedExpressionFoo({newFoo:isolatedFoo})</strong>.</p>
+<p>{% highlight html %}<br />
+<input ng-model="isolatedFoo" /><br />
+<button class="btn" ng-click="isolatedExpressionFoo({newFoo:isolatedFoo})">Submit</button><br />
+{% endhighlight %}</p>
+<p>And then! <strong>updateFoo</strong> gets called and does something incredibly clever.</p>
+<p>[js]<br />
+.controller('MyCtrl', ['$scope', function ($scope) {<br />
+    $scope.updateFoo = function (newFoo) {<br />
+        $scope.foo = newFoo;<br />
+    }<br />
+}]);<br />
+[/js]</p>
+<p>So, that is our whirlwind tour of isolated scope!</p>
+<h2>The Application!</h2>
+<p>This will actually be fairly brief since we covered the nuts and bolts of isolated scope already.</p>
+<p>For reference purposes here is the fiddle:<br />
+<a title="fiddle" href="http://jsfiddle.net/simpulton/VJ94U/" target="_blank">http://jsfiddle.net/simpulton/VJ94U/</a></p>
+<p>The application has isolated scope in two places, the first being the <strong>myNotebook</strong> directive, and the second being the <strong>myNote</strong> directive. What is interesting is that I am setting isolated scope within isolated scope. I am binding <strong>notes</strong> from <strong>NotebookCtrl</strong> to the <strong>myNotebook</strong> directive and from there I am looping over <strong>notes</strong> and binding <strong>note</strong> from <strong>myNotebook</strong> to the <strong>myNote</strong> directive. The reason I am using two-way databinding instead of an attribute expression is because I am dealing with objects and so string interpolation would not be optimal.</p>
+<p>The other problem that I faced was I wanted to be able to initiate the delete process from the <strong>note</strong> directive without having to reach out of its isolated scope. Essentially I am having to pass through two layers of functions to get back up to the scope, but I managed to do it while keeping my hands in the ride at all times. From the <strong>note</strong> directive, I call <strong>delete</strong> which is a wrapper that calls <strong>onDelete</strong> which is a <strong>wrapper</strong> that calls <strong>deleteNote</strong>. Tada!</p>
+<h2>Conclusion</h2>
+<p>The majority of this post was spent breaking down isolated scope and how it works. Once I realized that the syntax had been simplified to basically three options, the lights just kind of went on. From there it was fairly self-evident why isolated scope in AngularJS Sticky Notes was wired up the way it was. Two-way binding and function wrappers all the way down. I am still in awe that isolated scope worked so well even when I went all Inception on it and started creating isolated scope within isolated scope.</p>
+<p>A special thanks to <a href="http://twitter.com/johnlindquist" target="_blank">John Lindquist</a>, <a href="http://twitter.com/vojtajina" target="_blank">Vojta Jína</a> and <a href="http://twitter.com/kenslachtajr" target="_blank">Ken Slachta</a> for reviewing my post and examples before I released it to the wild.</p>
+<h2>Resources</h2>
+<p>AngularJS Sticky Notes Fiddle<br />
+<a title="fiddle" href="http://jsfiddle.net/simpulton/VJ94U/" target="_blank">http://jsfiddle.net/simpulton/VJ94U/</a></p>
+<p>AngularJS Sticky Notes Repository<br />
+<a title="github repository" href="https://github.com/simpulton/angular-sticky-notes" target="_blank">https://github.com/simpulton/angular-sticky-notes</a></p>
+<p>AngularJS Directive Documentation<br />
+<a title="AngularJS Directive Documentation" href="http://docs.angularjs.org/guide/directive" target="_blank">http://docs.angularjs.org/guide/directive</a></p>
+<p>AngularJS Mailing List<br />
+<a title="https://groups.google.com/forum/?fromgroups#!forum/angular" href="https://groups.google.com/forum/?fromgroups#!forum/angular" target="_blank">https://groups.google.com/forum/?fromgroups#!forum/angular</a></p>

@@ -1,0 +1,222 @@
+---
+layout: post
+title: MOAR subcomponents revision
+date: 
+type: post
+published: false
+status: draft
+categories:
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _yoast_wpseo_primary_category: ''
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Website</h2>
+<p>This lesson is the follow-up post to <a href="http://onehungrymind.com/build-a-simple-website-with-angular-2/" target="_blank">Get Started with Angular 2 by Building a Simple Website</a> where we walked through building out a simple website in Angular 2.</p>
+<p>In this lesson, we are going to expand on the idea of composition through components by introducing subcomponents. Angular 2 components, by nature, offer a consistent experience; which means that this will seem more like we are reinforcing existing concepts as opposed to throwing new-fangled monkey wrenches into the mix. This is good! My personal experience is that Angular 2 is <strong>much</strong> easier to learn because the Angular team has distilled AngularJS 1 best practices into a much simpler, less nuanced framework.</p>
+<blockquote><p>
+I wrote a post on AngularClass called <a href="https://angularclass.com/angular-2-components-angularjs-developers/" target="_blank">Angular 2 Components for AngularJS Developers</a> where I talk about the evolution of Angular components. It is an easy read and a great companion to this post.
+</p></blockquote>
+<p><img src="{{ site.baseurl }}/assets/moar-components-final.png" alt="Angular 2 SubComponents" width="802" height="527" class="aligncenter size-full wp-image-1152" /></p>
+<p>We are going to enhance the <strong>Experiments</strong> component by adding in an <strong>ExperimentDetails</strong> subcomponent to encapsulate the details of a single experiment. Along the way, we will build out the service to provide us with the <strong>experiments</strong> collection, build out the <strong>Experiment</strong> interface and, most importantly, show how to include the <strong>ExperimentDetails</strong> component in our <strong>Experiments</strong> component.</p>
+<p>Check out the first post in the series if you haven't, grab the code, and let's go!</p>
+<p>[button link="https://github.com/simpulton/angular2-website-routes" size="large" window="yes"]Code[/button]</p>
+<h2>Starting Point</h2>
+<p>We are going to use the code below as our starting point. If you read the first post in the series, the code below should be relatively familiar. In a nutshell, we have an <strong>Experiments</strong> component that is targeting the <strong>experiments</strong> element and using <strong>experiments.component.html</strong> as its template. We are injecting the <strong>StateService</strong> into our component via its constructor and then using the <strong>ngOnInit</strong> lifecycle hook to pull the message from the service.</p>
+<p>[js]<br />
+import {Component, OnInit} from '@angular/core';<br />
+import {StateService} from '../common/state.service';</p>
+<p>@Component({<br />
+  selector: 'experiments',<br />
+  templateUrl: require('app/experiments/experiments.component.html')<br />
+})<br />
+export class ExperimentsComponent implements OnInit {<br />
+  title: string = 'Experiments Page';<br />
+  body: string = 'This is the about experiments body';<br />
+  message: string = '';</p>
+<p>constructor(private stateService: StateService) {}</p>
+<p>ngOnInit() {<br />
+    this.message = this.stateService.getMessage();<br />
+  }</p>
+<p>updateMessage(m: string): void {<br />
+    this.stateService.setMessage(m);<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>At this point, the <strong>home</strong>, <strong>about</strong> and <strong>experiments</strong> features are almost identical and the perfect starting point for digging into subcomponents.</p>
+<h2>Getting the Experiments</h2>
+<p>To display a list of experiments, we need to create a service to provide us with the appropriate collection. We are going to create a class called <strong>ExperimentsService</strong> that exposes a method called <strong>getExperiments</strong>, which returns an array of experiment objects.</p>
+<p>[js]<br />
+import {Experiment} from './experiment.model';</p>
+<p>export class ExperimentsService {<br />
+  private experiments: Experiment[] = [<br />
+    {name: 'Experiment 1', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 2', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 3', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 4', description: 'This is an experiment', completed: 0}<br />
+  ];</p>
+<p>getExperiments(): Experiment[] {<br />
+    return this.experiments;<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>Two of the main features of TypeScript are the ability to make members of a class private with the <strong>private</strong> modifier as well as declare data types. These features are not mandatory, and you can use them to whatever degree you are comfortable. Here are a few variations that we could have used to define our <strong>experiments</strong> collection.</p>
+<p>[js]<br />
+experiments = [...] // Public with no type</p>
+<p>private experiments = [...] // Private with no type</p>
+<p>private experiments: Object[] = [...] // Private with an array of generic objects</p>
+<p>private experiments: Experiment[] = [...] // Private with an array of objects of type Experiment<br />
+[/js]</p>
+<p>How does TypeScript even know what an <strong>Experiment</strong> is so that it can enforce that type on the array? Notice in the code below that we are importing in an <strong>Experiment</strong> module that grants us access to the <strong>Experiment</strong> type.</p>
+<p>[js]<br />
+import {Injectable} from '@angular/core';<br />
+import {Experiment} from './experiment.model';</p>
+<p>@Injectable()<br />
+export class ExperimentsService {<br />
+  private experiments: Experiment[] = [<br />
+    {name: 'Experiment 1', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 2', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 3', description: 'This is an experiment', completed: 0},<br />
+    {name: 'Experiment 4', description: 'This is an experiment', completed: 0}<br />
+  ];</p>
+<p>getExperiments(): Experiment[] {<br />
+    return this.experiments;<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>But what is it, man!? Okay! We have created an interface that allows us to define the "shape" of how an <strong>Experiment</strong> should look. By declaring our interface, TypeScript knows how to type check an object against its intended shape.</p>
+<p>[js]<br />
+export interface Experiment {<br />
+  name: string;<br />
+  description: string;<br />
+  completed: number;<br />
+}<br />
+[/js]</p>
+<blockquote><p>
+Interfaces are an architectural cornerstone and out of scope of this lesson; however, at a minimum I recommend taking a few minutes to read up on TypeScript interfaces <a href="http://www.typescriptlang.org/Handbook#interfaces" target="_blank">here</a>
+</p></blockquote>
+<p>Now that we have created <strong>ExperimentsService</strong> and <strong>Experiment</strong>, we are now ready to integrate with our <strong>Experiments</strong> component. We are going to import our two new modules.</p>
+<p>[js]<br />
+import {Experiment} from '../common/experiment.model';<br />
+import {ExperimentsService} from '../common/experiments.service';<br />
+[/js]</p>
+<p>We will then define an <strong>experiments</strong> collection with a typed <strong>Experiment</strong> array. We are going to inject <strong>ExperimentsService</strong> into our component in the constructor function just like we did with the <strong>StateService</strong>. To complete the circuit, we will populate our <strong>experiments</strong> collection by calling <strong>this.experimentsService.getExperiments()</strong> from the <strong>ngOnInit</strong> method.</p>
+<p>[js]<br />
+experiments: Experiment[];</p>
+<p>constructor(<br />
+  private stateService: StateService,<br />
+  private experimentsService: ExperimentsService) {}</p>
+<p>ngOnInit() {<br />
+  this.experiments = this.experimentsService.getExperiments();<br />
+  this.message = this.stateService.getMessage();<br />
+}<br />
+[/js]</p>
+<p>Now that we have our experiments, it is time for us to do something with them.</p>
+<h2>Displaying the Experiments</h2>
+<p>We are now going to create the experiment detail component, and I want you to be mindful of how many of the steps are familiar. We will start out by creating the <strong>class</strong> for our components and calling it <strong>ExperimentDetailComponent</strong>.</p>
+<p>[js]<br />
+export class ExperimentDetailComponent { }<br />
+[/js]</p>
+<p>Then we will <strong>import</strong> our modules.</p>
+<p>[js]<br />
+import {Component, Input} from '@angular/core';<br />
+import {Experiment} from '../../common/experiment.model';</p>
+<p>export class ExperimentDetailComponent { }<br />
+[/js]</p>
+<p>And then we are going to <strong>decorate</strong> the class to target the <strong>experiment</strong> element and use the <strong>experiment.detail.component.html</strong> template.</p>
+<p>[js]<br />
+import {Component, Input} from '@angular/core';<br />
+import {Experiment} from '../../common/experiment.model';</p>
+<p>@Component({<br />
+  selector: 'experiment',<br />
+  templateUrl: require('app/experiments/experiment-details/experiment.detail.component.html')<br />
+})<br />
+export class ExperimentDetailComponent { }<br />
+[/js]</p>
+<p>We are now going to <strong>enhance</strong> our basic class to do actual work. Notice in the code above that we are importing the <strong>Component</strong> module and then annotating our class with <strong>@Component()</strong>. Leading question alert! If we are also importing the <strong>Input</strong> module, would it not be reasonable to expect to see something like <strong>@Input()</strong> somewhere in our code? Why yes! Yes, it would!</p>
+<p>[js]<br />
+export class ExperimentDetailComponent {<br />
+  @Input() experiment: Experiment;</p>
+<p>doExperiment(): void {<br />
+    this.experiment.completed += 1;<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>In Angular 2, <strong>@Input</strong> declares a data-bound property so that it is automatically updated during change detection. This is very similar, albeit much simpler, to isolated scope in Angular 1.</p>
+<p>Our experiment detail template is comprised mostly of classic curly brace data binding with the exception of our <strong>(click)</strong> handler which we use to call <strong>doExperiment</strong>.</p>
+<p>[html]</p>
+<div class="experiment" (click)="doExperiment()">
+<h3>
+    {{ experiment.name }}<br />
+  </h3>
+<p>    {{ experiment.description }}</p>
+<p>    <strong>{{experiment.completed}}</strong></p>
+<p>[/html]</p>
+<p>Our <strong>ExperimentDetailComponent</strong> is complete, and it is now time to integrate it into our <strong>ExperimentsComponent</strong>.</p>
+<h2>Experiments Meet ExperimentsDetail</h2>
+<p>We will update our imports to include <strong>ExperimentDetailComponent</strong>.</p>
+<p>[js]<br />
+import {Component} from '@angular/core';<br />
+import {NgFor} from '@angular/common';<br />
+import {Experiment} from '../common/experiment.model';<br />
+import {ExperimentsService} from '../common/experiments.service';<br />
+import {StateService} from '../common/state.service';<br />
+import {ExperimentDetailComponent} from './experiment-details/experiment.detail.component';<br />
+[/js]</p>
+<p><strong>This is important!</strong> For us to use a subcomponent within a parent component, we <strong>have</strong> to define it in the <strong>directives</strong> property on our component annotation. Emphasis added to the previous statement because I have wasted a bunch of time by spacing out that critical step.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'experiments',<br />
+  templateUrl: require('app/experiments/experiments.component.html'),<br />
+  directives: [ExperimentDetailComponent]<br />
+})<br />
+[/js]</p>
+<h2>Angular 2 Template Primer</h2>
+<p>Home stretch! We need to update our HTML to render the <strong>experiment</strong> subcomponent. All of this happens in a single line of code that, as we can see below, is quite dense.</p>
+<p>[html]<br />
+<experiment *ngFor="let experiment of experiments" [experiment]="experiment"><br />
+[/html]</p>
+<p>Let's break this down. First things first, we want to render the <strong>ExperimentDetailComponent</strong> and so we will add this <strong>experiment</strong> selector to our page.</p>
+<p>[html]<br />
+<experiment></experiment><br />
+[/html]</p>
+<p>We want to render a bunch of <strong>experiment</strong> components, and so we will use <strong>ngFor</strong> to repeat over our <strong>experiments</strong> collection and stamp out <em>N</em> number of elements. In Angular 2, we use <strong>ngFor</strong> much like we used <strong>ngRepeat</strong> in Angular 1.</p>
+<p>[html]<br />
+<experiment *ngFor="let experiment of experiments"><br />
+[/html]</p>
+<p>There are two things that I would like to call out; these are new additions to the Angular templating that will seem "odd" at first. The first oddity is the asterisk that we see in front of <strong>ngFor</strong>. This is a shorthand way for us to work with directives that modify the DOM. Angular sees the asterisk and knows to expand the HTML into whatever defined as our template. The oddity is the <strong>let</strong> keyword. This is providing a local variable for us to hook on to inside of the template.</p>
+<p>Remember that one really funny time when we used <strong>@Input</strong> on that one component? You know!? That ONE time! It looked like this <strong>@Input() experiment: Experiment;</strong>. We are now going to make use of that by adding a property binding in the form of  <strong>[experiment]</strong> to our element and then setting the value to the local variable <strong>experiment</strong> we created in our <strong>ngFor</strong> loop.</p>
+<p>[html]<br />
+<experiment *ngFor="let experiment of experiments" [experiment]="experiment"><br />
+[/html]</p>
+<p>One line of code and yet so many important things are happening when we stop and think about it. And there you have it! We have successfully created and integrated a subcomponent into our app.</p>
+<h2>Review</h2>
+<p>Let's do a quick review of what we covered in this post.</p>
+<ul>
+<li>To make a service injectable, we annotate our class with <strong>@Injectable</strong>.</li>
+<li>To make a component, we annotate our class with <strong>@Component</strong>.</li>
+<li>To make a property bindable, we annotate our property with <strong>@Input</strong>.</li>
+<li>We can use the <strong>private</strong> modifier in TypeScript to restrict access to class members.</li>
+<li>We can use TypeScript interfaces to define the shape of an object and provide richer typing.</li>
+<li>We <strong>must</strong> add our subcomponents to the <strong>directives</strong> array in our <strong>@Component</strong> annotation.</li>
+<li>The asterisk (*) is a shorthand method to work with directives that modify the DOM by inserting templates.</li>
+<li>We create a local variable inside an *ngFor loop by using the key word <strong>let</strong>.</li>
+<li>Double brackets ([]) binds an element property to an expression.</li>
+<li>At the risk of an oversimplification, <strong>ngFor</strong> is the new <strong>ngRepeat</strong>.</li>
+</ul>
+<p>Thanks for joining me as we built out an Angular 2 subcomponent. I have a few ideas for what I want to tackle next in this series but let me know what you would like to see in the comments below. #highFive</p>
+<h2>Resources</h2>
+<p><a href="http://onehungrymind.com/build-a-simple-website-with-angular-2/" target="_blank">Get Started with Angular 2 by Building a Simple Website</a></p>
+<p><a href="https://angularclass.com/angular-2-components-angularjs-developers/" target="_blank">Angular 2 Components for AngularJS Developers</a></p>
+<p><a href="http://www.typescriptlang.org/Handbook#interfaces" target="_blank">TypeScript Interfaces</a></p>
+<p><a href="https://angular.io/docs/ts/latest/guide/template-syntax.html" target="_blank">Angular 2 Template Syntax Guide</a></p>
+<p>[button link="https://github.com/simpulton/angular2-website-routes" size="large" window="yes"]Code[/button]</p>

@@ -1,0 +1,51 @@
+---
+layout: post
+title: The Little Big Things with ngAria
+date: 2014-12-02 17:59:53.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '981'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>My buddy Marcy Sutton <a href="https://twitter.com/marcysutton" title="@marcysutton" target="_blank">@marcysutton</a> called me out via Twitter about my <a href="http://onehungrymind.com/build-mailchimp-signup-form-angularjs/" title="Build a MailChimp Signup Form with AngularJS" target="_blank">Build a MailChimp Signup Form with AngularJS</a> post.</p>
+<p>At first, I was like "Uh oh! How do I do that!?"; then I realized that ngAria is amazing and is a really tiny step you can do right now that has a huge impact on increasing accessibility for your application. Prepare yourself for the longest blog post ever.</p>
+<p>[button link="http://simpulton.github.io/angularjs-mailchimp-signup/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-mailchimp-signup" size="large" window="yes"]Code[/button]</p>
+<h2>Longest Blog Post Ever</h2>
+<p>The first thing you need to do is add the ngAria JavaScript file to your HTML page.</p>
+<p>{% highlight html %}<br />
+<script type="text/javascript" src="vendor/angular-aria.min.js"></script><br />
+{% endhighlight %}</p>
+<p>And then you need to add the ngAria submodule to your application.</p>
+<p>[js]<br />
+angular.module('ngMailChimp', ['ngAria', 'ngMessages', 'ngAnimate'])<br />
+[/js]</p>
+<p>And done! ngAria dynamically added the appropriate attributes to your application. Little things can indeed become big things.</p>
+<h2>Review</h2>
+<p>Here is a review of what you need to do to increase the accessibility of your site with ngAria.</p>
+<ol>
+<li>Add the ngAria source file.</li>
+<li>Add the ngAria submodule</li>
+</ol>
+<p>Thanks Marcy for your awesome work on this submodule!</p>
+<h2>Resources</h2>
+<p><a href="http://marcysutton.com/" title="Marcy Sutton's Blog" target="_blank">Marcy Sutton's Blog</a></p>
+<p><a href="https://docs.angularjs.org/api/ngAria" title="ngAria Documents" target="_blank">ngAria Documents</a></p>
+<p><a href="https://docs.angularjs.org/guide/accessibility" title="Accessibility with ngAria" target="_blank">Accessibility with ngAria</a></p>
+<p>[button link="http://simpulton.github.io/angularjs-mailchimp-signup/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-mailchimp-signup" size="large" window="yes"]Code[/button]</p>

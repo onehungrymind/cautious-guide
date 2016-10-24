@@ -1,0 +1,309 @@
+---
+layout: post
+title: Angular 2 website revision
+date: 
+type: post
+published: false
+status: draft
+categories:
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _yoast_wpseo_primary_category: ''
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Website</h2>
+<p><img src="{{ site.baseurl }}/assets/ng2-website-screenshot.png" alt="Angular 2 Website Screenshot" width="1024" height="325" class="alignnone size-full wp-image-1144" /></p>
+<p>Angular 2 has finally hit beta which was the mental milestone for me to start writing Angular 2 content. Hooray! To kick things off, I wanted to port a project that I covered in my <a href="http://onehungrymind.com/building-a-website-with-angularjs-pt-2-now-with-state/" target="_blank">Building a Website with AngularJS Pt 2 – Now With State!</a> post to Angular 2. We are going to get acquainted with the brave new world of Angular 2 by building out a simple website so we can see how the Angular 2 pieces come together.</p>
+<p>Grab the code from the repository below and let's go!</p>
+<p>[button link="https://github.com/simpulton/angular2-website-routes" size="large" window="yes"]Code[/button]</p>
+<h2>Compile and Serve</h2>
+<p>There are two main ways to compile and serve an Angular 2 application and that is via <a href="https://webpack.github.io/" target="_blank">webpack</a> or <a href="https://github.com/systemjs/systemjs" target="_blank">systemjs</a>. I have personally fallen in love with webpack, and that is what we will use to build this app. I am not going to go too far into the details of the build system as there are a myriad of quality Angular 2 Webpack seed projects that will jumpstart your Angular 2 app. See the <em>Resources</em> section for more details.</p>
+<p>You can write your Angular 2 application in ES5, EcmaScript 2015 or TypeScript, but the framework lends itself best to TypeScript. Writing in TypeScript requires a bit more setup but the return on investment is tenfold in terms of productivity and clarity in our code.</p>
+<p>When you download the repository, the first thing you need to do is run <strong>npm i</strong> to install the package dependencies.</p>
+<h3>tsconfig.json</h3>
+<p>One of the package dependencies that we are going to install is <strong>typescript</strong>, which we will use to compile our TypeScript into the Type O negative version of JavaScript: the universal donor, ES5. We need to tell our compiler how we want to compile our TypeScript files, so we need to create a <strong>tsconfig.json</strong> file. The file below reads pretty well, but I will call out the two most important properties and those are <strong>"target": "ES5"</strong> and <strong>"module": "commonjs"</strong>. We are setting our ECMAScript version to <strong>ES5</strong> and indicating that we want to generate our modules in the <strong>commonjs</strong> format.</p>
+<p>[js]<br />
+{<br />
+  "compilerOptions": {<br />
+    "target": "es5",<br />
+    "module": "commonjs",<br />
+    "emitDecoratorMetadata": true,<br />
+    "experimentalDecorators": true,<br />
+    "sourceMap": true,<br />
+    "suppressImplicitAnyIndexErrors":true<br />
+  },<br />
+  "compileOnSave": false,<br />
+  "buildOnSave": false,<br />
+  "exclude": [<br />
+    "node_modules"<br />
+  ],<br />
+  "filesGlob": [<br />
+    "app/**/*.ts",<br />
+    "typings/browser.d.ts"<br />
+  ],<br />
+  "atom": {<br />
+    "rewriteTsconfig": false<br />
+  }<br />
+}<br />
+[/js]</p>
+<h3>packages.json</h3>
+<p>We have defined how we want our TypeScript to be compiled, now we need to create a hook for the work to be done. In our <strong>packages.json</strong> file, we have defined a task that uses <a href="https://webpack.github.io/docs/webpack-dev-server.html" target="_blank">webpack-dev-server</a> along with webpack to bundle our TypeScript modules and other assets into a single javascript file and then serve the app.</p>
+<p>[js]<br />
+"scripts": {<br />
+  "start": "webpack-dev-server --inline --colors --watch --display-error-details --display-cached  --port 3001 --hot"<br />
+}<br />
+[/js]</p>
+<p>We then call <strong>npm start</strong> when we are ready to compile and serve our application.</p>
+<h2>Bootstrapping</h2>
+<p>The first mystery of Angular 2 for me was "How in the world do I even run the app!?". The second mystery was "Okay, so how do I bootstrap the application?!".</p>
+<p>The first thing we need to do to bootstrap our application is to include the necessary resources into our <strong>index.html</strong> file. Because webpack is bundling everything into a single file, we only need to include one <strong>bundle.js</strong> file.<br />
+{% highlight html %}<br />
+<script src="bundle.js"></script><br />
+{% endhighlight %}</p>
+<p>Inside the <strong>boot.ts</strong> file, we are importing three components; <strong>bootstrap</strong>, <strong>ROUTER_PROVIDERS</strong> and <strong>AppComponent</strong>. We are also importing <strong>core-js</strong> which is an ES6 polyfill, as well as <strong>zone.js</strong> which Angular uses for change detection. We then instantiate our application and specify our root level component, <strong>AppComponent</strong> and inject <strong>ROUTER_PROVIDERS</strong> as a submodule.</p>
+<p>[js]<br />
+import 'core-js';<br />
+import 'zone.js/dist/zone';</p>
+<p>import {bootstrap} from '@angular/platform-browser-dynamic';<br />
+import {ROUTER_PROVIDERS} from '@angular/router';<br />
+import {AppComponent} from './app.component';</p>
+<p>bootstrap(AppComponent, [<br />
+  ROUTER_PROVIDERS<br />
+]);<br />
+[/js]</p>
+<p>Back in our <strong>index.html</strong> file, our entry point in the markup happens at this line: <strong>&lt;app&gt;Loading...&lt;/app&gt;</strong>. Angular has instantiated <strong>AppComponent</strong> and loaded its template into the <strong>app</strong> element.</p>
+<p>[html]<br />
+<body><br />
+    <app>Loading...</app><br />
+</body><br />
+[/html]</p>
+<p>We have just covered how to compile, serve and bootstrap an Angular 2 application. Let us unpack what a component consists of so that we can make the connection between how <strong>AppComponent</strong> becomes <strong>app</strong> on our page.</p>
+<h2>The App Component</h2>
+<p>Angular components are really just JavaScript classes wrapped with love in Angular 2 metadata.</p>
+<blockquote><p>
+If you haven't read my <a href="http://onehungrymind.com/cider-my-checklist-for-creating-angular-2-components/" target="_blank">CIDER: My Checklist for Creating Angular 2 Components</a> post, check it out. You will see the CIDER process in effect here.
+</p></blockquote>
+<p>The first thing I do when creating a component is to create the <strong>class</strong>. I will usually just stub it out because I will <strong>enhance</strong> it later.</p>
+<p>[js]<br />
+export class AppComponent {}<br />
+[/js]</p>
+<p>The next thing we are going to do is to <strong>import</strong> our dependencies. In this case, we just need to import <strong>Component</strong> from <strong>@angular/core</strong>.</p>
+<p>[js]<br />
+import {Component} from '@angular/core';<br />
+[/js]</p>
+<p>And from here, we are going to <strong>decorate</strong> our class by adding <strong>@Component</strong> metadata to tell our application how we want the <strong>AppComponent</strong> to behave. We are defining the HTML element we want this class to target in the <strong>selector</strong> property as well as setting our template and styles via <strong>templateUrl</strong> and <strong>styleUrls</strong>, respectively. We are also injecting <strong>ROUTER_DIRECTIVES</strong> into our component at the <strong>directives</strong> property.</p>
+<p>[js]<br />
+@Component({<br />
+  selector: 'app',<br />
+  templateUrl: require('app/app.component.html'),<br />
+  styleUrls: [require('app/app.component.css')],<br />
+  directives: [ROUTER_DIRECTIVES]<br />
+})<br />
+export class AppComponent {}<br />
+[/js]</p>
+<p>This is where things get a bit fluid in the CIDER process. I will often spend <em>n</em> iterations <strong>enhancing</strong> my components and this could go on indefinitely. In our case, we want to add in routing to our application and so we are going to import the appropriate modules and decorate our component with <strong>@Routes</strong>. To enable routing, we are going to import <strong>Routes</strong> and <strong>ROUTER_DIRECTIVES</strong> as well as <strong>AboutComponent</strong>, <strong>ExperimentsComponent</strong> and <strong>HomeComponent</strong>.</p>
+<p>[js]<br />
+import {Routes, ROUTER_DIRECTIVES} from '@angular/router';<br />
+import {AboutComponent} from './about/about.component';<br />
+import {ExperimentsComponent} from './experiments/experiments.component';<br />
+import {HomeComponent} from './home/home.component';<br />
+[/js]</p>
+<p>We need the routing modules to enable routing and the additional components for our routing table. We are passing in an array of route definitions into <strong>@Routes</strong>, which tell us the <strong>path</strong> of the route and what <strong>component</strong> is going to be mapped to that route. We want our <strong>home</strong> route to be our default route; to accomplish this, we do two things. First, we add a <strong>'/'</strong> route to handle navigations to the top-level domain and reroute them to the home component. Then we will add in a <strong>'/*'</strong> route to catch all other routes and reroute them to the home component. We will circle back around and talk about how the templates deal with routes in a moment but the basic gist of the new component router in Angular 2 is that each route maps to a component. Not really sure why they called it <strong>ComponentRouter</strong> though... JK!</p>
+<p>[js]<br />
+@Routes([<br />
+  {path: '/',            component: HomeComponent },<br />
+  {path: '/home',        component: HomeComponent},<br />
+  {path: '/about',       component: AboutComponent },<br />
+  {path: '/experiments', component: ExperimentsComponent },<br />
+  {path: '/*',           component: HomeComponent }<br />
+])<br />
+[/js]</p>
+<p>We are also going to import <strong>StateService</strong> and <strong>ExperimentsService</strong> into our component and then decorate our component on the <strong>providers</strong> property which we will cover later. And I now present the #drumRoll <strong>AppComponent</strong> in its entirety!</p>
+<p>[js]<br />
+import {Component} from '@angular/core';<br />
+import {Routes, ROUTER_DIRECTIVES} from '@angular/router';<br />
+import {AboutComponent} from './about/about.component';<br />
+import {ExperimentsComponent} from './experiments/experiments.component';<br />
+import {HomeComponent} from './home/home.component';<br />
+import {StateService} from './common/state.service';<br />
+import {ExperimentsService} from './common/experiments.service';</p>
+<p>@Component({<br />
+  selector: 'app',<br />
+  templateUrl: require('app/app.component.html'),<br />
+  styleUrls: [require('app/app.component.css')],<br />
+  directives: [ROUTER_DIRECTIVES],<br />
+  providers: [StateService, ExperimentsService],<br />
+})<br />
+@Routes([<br />
+  {path: '/',            component: HomeComponent },<br />
+  {path: '/home',        component: HomeComponent},<br />
+  {path: '/about',       component: AboutComponent },<br />
+  {path: '/experiments', component: ExperimentsComponent },<br />
+  {path: '/*',           component: HomeComponent }<br />
+])<br />
+export class AppComponent {}<br />
+[/js]</p>
+<blockquote><p>
+I really dig how everything up to this point has been self-documenting in its intentions and purpose. There isn't a single piece in this component that I cannot immediately figure out what its purpose is.
+</p></blockquote>
+<p>To complete the CIDER process, we are going to <strong>repeat</strong> the process on a sub-component. All three of our components defined in our router are pretty much the same and so we are going to focus on the <strong>HomeComponent</strong>. There is some additional functionality in the <strong>ExperimentComponent</strong> that we will cover in a later post.</p>
+<h2>The Home Component</h2>
+<p>We are going to break ground on our <strong>HomeComponent</strong> by defining the <strong>HomeComponent</strong> class. We are also defining and initializing two properties on our class for the component's title and body. This is a website after all!</p>
+<p>[js]<br />
+export class HomeComponent {<br />
+  title: string = 'Home Page';<br />
+  body:  string = 'This is the about home body';<br />
+}<br />
+[/js]</p>
+<p>We will import the appropriate dependencies.</p>
+<p>[js]<br />
+import {Component} from '@angular/core';<br />
+[/js]</p>
+<p>We will then decorate our class and set the <strong>selector</strong> and <strong>templateUrl</strong> properties.</p>
+<p>[js]<br />
+@Component({<br />
+    selector: 'home',<br />
+    templateUrl: require('app/home/home.component.html')<br />
+})<br />
+[/js]</p>
+<p>We are going to use the <strong>StateService</strong> to store state between our routes and so we will add that to our component. Dependency injection within Angular 2 happens at the constructor and so we are going to add one to our class and inject the <strong>StateService</strong>. Components also have lifecycle hooks that we can use to sequence units of work. In our case, we want to retrieve and set our <strong>message</strong> from <strong>StateService</strong> when our component is initialized. We will use the <strong>ngOnInit</strong> hook to make that call for us. We don't have to import <strong>OnInit</strong> and extend the class, but it is a good idea semantically.</p>
+<p>[js]<br />
+import {Component, OnInit} from '@angular/core';<br />
+import {StateService} from '../common/state.service';</p>
+<p>export class HomeComponent implements OnInit {<br />
+  title: string = 'Home Page';<br />
+  body:  string = 'This is the about home body';<br />
+  message: string;</p>
+<p>constructor(private stateService: StateService) { }</p>
+<p>ngOnInit() {<br />
+    this.message = this.stateService.getMessage();<br />
+  }</p>
+<p>updateMessage(m: string): void {<br />
+    this.stateService.setMessage(m);<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>Again, incredibly self-documenting and easy to read.</p>
+<h2>The State Service</h2>
+<p>We are going to create the <strong>StateService</strong> class and then expose it as a provider to our application. I am not going to offer too much commentary on the code below because it is so rudimentary in nature. It is essentially a service that has a getter and a setter for a <strong>message</strong> property.</p>
+<p>[js]<br />
+export class StateService {<br />
+  private message = 'Hello Message';</p>
+<p>getMessage(): string {<br />
+    return this.message;<br />
+  };</p>
+<p>setMessage(newMessage: string): void {<br />
+    this.message = newMessage;<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>Things get interesting when we want to make <strong>StateService</strong> available for injection into other components. The first step is to import <strong>Injectable</strong> into our class.</p>
+<p>[js]<br />
+import {Injectable} from '@angular/core';<br />
+[/js]</p>
+<p>And then we decorate it with <strong>@Injectable()</strong>.</p>
+<p>[js]<br />
+@Injectable()<br />
+export class StateService {<br />
+  private message = 'Hello Message';</p>
+<p>getMessage(): string {<br />
+    return this.message;<br />
+  };</p>
+<p>setMessage(newMessage: string): void {<br />
+    this.message = newMessage;<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>We have spent most of our time working through building our components, so let us complete the loop by locking down our templates.</p>
+<h2>The Views</h2>
+<p>Using <strong>home.component.html</strong> as our reference point, let us take an abbreviated tour of the updated template syntax in Angular 2.</p>
+<p>One-way data binding is defined exactly like it was in Angular 1.x through string interpolation.</p>
+<p>[html]</p>
+<h1>{{title}}</h1>
+<p>{{body}}</p>
+<p>[/html]</p>
+<p>User input events are no longer captured by adding custom Angular directives to our markup but rather through capturing <a href="https://developer.mozilla.org/en-US/docs/Web/Events" target="_blank">native DOM events</a> and wrapping them in parenthesis. We can see this in the code below as we capture the click event with <strong>(click)="updateMessage(message)"</strong> and call <strong>updateMessage</strong>.</p>
+<p>[html]<br />
+<button type="submit" class="btn" (click)="updateMessage(message)">Update Message<br />
+[/html]</p>
+<p>Two-way data binding in Angular 2 is basically one-way data binding applied twice. We talked about binding using string interpolation but we can also bind to properties using brackets syntax. We combine property binding (component to view) and event binding (view to component) to accomplish two-way data binding. The solution is surprisingly simple as we wrap our <strong>ngModel</strong> in <em>both</em> brackets and parenthesis to make <strong>[(ngModel)]="message"</strong>.</p>
+<p>[html]<br />
+<input type="text" [(ngModel)]="message" placeholder="Message"><br />
+[/html]</p>
+<p>For context, here is the entire home template.</p>
+<p>[html]</p>
+<h1>{{title}}</h1>
+<p>{{body}}</p>
+<hr />
+<div>
+<h2 class="text-error">Home: {{message}}</h2>
+<form class="form-inline">
+      <input type="text" [(ngModel)]="message" placeholder="Message"><br />
+      <button type="submit" class="btn" (click)="updateMessage(message)">Update Message<br />
+    </form>
+</div>
+<p>[/html]</p>
+<h3>Routing Markup</h3>
+<p>We are back to where we started as we wrap up this lesson with a discussion on the template syntax for routing in <strong>app.component.html</strong>. When we define a route, where does the component's template actually get inserted? We set that insert point with <strong>router-outlet</strong>. It is the new <strong>ngView</strong>.</p>
+<p>[html]</p>
+<div id="container">
+    <router-outlet></router-outlet>
+</div>
+<p>[/html]</p>
+<p>Great! So how do we navigate from one route to another? We do that with <strong>routerLink</strong> in the form of <strong>[routerLink]="['/home']"</strong> as we can see in the code below.</p>
+<p>[html]</p>
+<h1 id="logo">
+  <a [routerLink]="['/home']"><br />
+</h1>
+<div id="menu">
+  <a [routerLink]="['/home']" class="btn">Home<br />
+  <a [routerLink]="['/about']" class="btn">About<br />
+  <a [routerLink]="['/experiments']" class="btn">Experiments
+</div>
+<p>[/html]</p>
+<p>And the entire <strong>app.component.html</strong>.</p>
+<p>[html]</p>
+<header id="header">
+<h1 id="logo">
+    <a [routerLink]="['/home']"><br />
+  </h1>
+<div id="menu">
+    <a [routerLink]="['/home']" class="btn">Home<br />
+    <a [routerLink]="['/about']" class="btn">About<br />
+    <a [routerLink]="['/experiments']" class="btn">Experiments
+  </div>
+<div class="color"></div>
+<div class="clear"></div>
+</header>
+<div class="shadow"></div>
+<div id="container">
+  <router-outlet></router-outlet>
+</div>
+<p>[/html]</p>
+<h2>Review</h2>
+<p>Before you raise your billable rates by 15% and start selling this sweet Angular 2 website, let us do a quick review of what we covered.</p>
+<ul>
+<li>We define how we want to compile TypeScript in our <strong>tsconfig.json</strong> file.</li>
+<li>We use <strong>webpack-dev-server</strong> to compile and serve our application.</li>
+<li>We saw how to use CIDER to build out our <strong>AppComponent</strong> and <strong>HomeComponent</strong></li>
+<li>We learned how to created an injectable service using <strong>@Injectable()</strong> metadata.</li>
+<li>We did an abbreviated tour of the Angular 2 binding syntax. </li>
+<li>We learned how routes are added to our view with <strong>router-outlet</strong> and the syntax for navigating to a route using <strong>routerLink</strong> </li>
+</ul>
+<p>Let me know what you else you would like to learn in the comments below and in the meantime... #highFive!</p>
+<h2>Resources</h2>
+<p><a href="https://angular.io/docs/ts/latest/guide/template-syntax.html" target="_blank">Angular 2 Template Syntax</a></p>
+<p><a href="https://github.com/Microsoft/TypeScript/wiki/tsconfig.json" target="_blank">tsconfig.json Documentation</a></p>
+<p><a href="https://github.com/Microsoft/TypeScript/wiki" target="_blank">TypeScript Documentation</a></p>
+<p><a href="https://webpack.github.io/" target="_blank">Webpack</a></p>
+<p><a href="https://webpack.github.io/docs/webpack-dev-server.html" target="_blank">Webpack Dev Server</a></p>
+<p>[button link="https://github.com/simpulton/angular2-website-routes" size="large" window="yes"]Code[/button]</p>

@@ -1,0 +1,156 @@
+---
+layout: post
+title: 5 Reasons to Fall in Love with Angular Material
+date: 2015-12-02 19:55:44.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Programming
+- UI
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '1121'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>Hello, Angular Material!</h2>
+<p><img src="{{ site.baseurl }}/img/afd-gif-export.gif" alt="Angular Material GIF" width="1280" height="720" class="alignnone size-full wp-image-1124" /></p>
+<p>Let me tell you about the first time I used Angular Material.</p>
+<p>I was just about to put myself on the line. I looked over at Scott Moss and whispered "Why don't we just skip the static comps and do the entire thing in Angular Material?" to which he replied "I know, right!".</p>
+<p>I raised my hand and politely asked, "Would it be alright if we skipped doing static comps and just did the entire thing as a working proof of concept?" The response was golden.</p>
+<p>"Uh... yeah. Sure. If you think you can do that"</p>
+<p>Scott and I were participating in an in-house hackathon and the goal was to produce proof of concept where we could click through some basic static comps to illustrate a basic workflow. We were going to skip all that and build a working prototype instead with Angular Material and I had no real experience with it. The experience was 10x better than my expectations; the result was 10x better than the expectations of the entire team.</p>
+<p>In two days, Scott and I had built out an entire working prototype that did extremely well in user testing and the concept eventually went into production.</p>
+<p>That is when I fell in love with Angular Material here are the top 5 reasons that I believe it is one of the most significant tools that an Angular developer can have in their toolbox.</p>
+<h2>1. Material Design</h2>
+<p><img src="{{ site.baseurl }}/img/materialdesign_goals_system-1024x485.png" alt="Material Design Goals" width="1024" height="485" class="alignnone size-large wp-image-1122" /></p>
+<p>If we are going to talk about Angular Material, we first have to discuss Material Design. Material Design is the soul and personality of Angular Material and Angular Material is the amazing execution of that vision. All my additional points are rooted in the principles put forth by Material Design.</p>
+<p>Material Design is a powerful specification created by Google that facilitates a consistent experience across multiple devices regardless of form factor or input method. To achieve this goal, Angular Material implemented an incredibly intuitive and easy layout system. Material Design is also based on a collection of principles that come together to produce a rich and compelling visual experience for the user.</p>
+<p>The goal of Material Design was to provide an experience where the UI elements provided a tactile reality in how they were layered and styled. There is a subtle sense of dimension when working with Material Design that indicates intent and relation. If you were to look at a material interface and conclude that it was almost like looking at paper elements stack on top of each other, you would be correct. This is intentional. To reinforce the concept of intention, every motion within Material Design is to convey meaning and clarify context within the application. The net sum of these principles is a foundation in which creating beautiful interfaces is the default.</p>
+<h2>2. Layout</h2>
+<p>CSS layout is historically notable as the foremost cause of countries going to war, mental health issues, and countless physical confrontations between humans and technological devices. Angular Material has redeemed the sins of our CSS patriarchs by making layout simple. At some point or another, we have all Googled "How to layout two divs side by side" and eventually "How to center element vertically in CSS".</p>
+<p>Because Angular Material is based on CSS flexbox, solving these historically perplexing questions can be achieved in just a few lines of HTML.</p>
+<p>Allow me to start with the chore of laying out two elements side by side in HTML. Create a <strong>div</strong> with a <strong>layout</strong> attribute set to <strong>row</strong> and then two (or N really) child elements with a <strong>flex</strong> attribute on them.</p>
+<p>{% highlight html %}</p>
+<div layout="row">
+<div flex>First item in row</div>
+<div flex>Second item in row</div>
+</div>
+<p>{% endhighlight %}</p>
+<p>And done! It was just that easy. But what if we want the first child to take just a portion of the page because it is navigation and the second child to take up the rest? Just add a number value to the <strong>flex</strong> attribute and that is the percentage of the available layout that that element will fill. Easy mode.</p>
+<p>{% highlight html %}</p>
+<div layout="row">
+<div flex="20">
+    First Half
+  </div>
+<div flex>
+    Second Half
+  </div>
+</div>
+<p>{% endhighlight %}</p>
+<h4>Responsive Layout</h4>
+<p>And what about responsive layout? There is an entire set of <strong>layout</strong> options available to accommodate responsive layout.</p>
+<p>For instance, what if we had two child elements that we wanted to live side by side unless we were on a mobile device and then we wanted them to stack. All we would need to do in this case is add an attribute calling out the layout for the small form factor. In this case, we shift from a <strong>row</strong> layout to a <strong>column</strong> layout by adding <strong>layout-sm="column"</strong> to our parent container.</p>
+<p>{% highlight html %}</p>
+<div layout="row" layout-sm="column">
+<div flex>
+    I'm above on mobile, and to the left on larger devices.
+  </div>
+<div flex>
+    I'm below on mobile, and to the right on larger devices.
+  </div>
+</div>
+<p>{% endhighlight %}</p>
+<h4>Child Alignment</h4>
+<p><img src="{{ site.baseurl }}/img/TFxWdeHSikPF4azRe41WUFDc9S4skflFsyhq3xnqH2c.png" alt="Child Alignment" width="817" height="176" class="alignnone size-full wp-image-1125" /></p>
+<p>And this is the part of the post where I start to break down and weep. Why is it so ridiculously complicated to center an element vertically in CSS? WHY!? The math isn't hard. We know this because have been working around this deficiency for years with JavaScript. Purely out of historical frustration, the ability to sanely position children elements within a layout in a syntax that actually makes sense is probably one of my most favorite features of Angular Material.</p>
+<p>{% highlight html %}</p>
+<div layout="row" layout-align="center center">
+<div>one</div>
+<div>two</div>
+<div>three</div>
+</div>
+<p>{% endhighlight %}</p>
+<p>We should all take a moment and send a mental hug to the Angular Material team. {{HUG}}</p>
+<h2>3. Aesthetics</h2>
+<p><iframe width="960" height="540" src="https://www.youtube.com/embed/Q8TXgCzxEnw" frameborder="0" allowfullscreen></iframe></p>
+<p>I have no intention of marginalizing the excellent work done by Twitter Bootstrap and Angular UI Bootstrap. Solid work by all and I have used them both on many projects. With that said, Material Design and by proxy Angular Material has taken the aesthetic index up to a whole new level. Take a moment to check out the super hype video above and realize that we get all of that candy right out of the box.</p>
+<p>Case in point, the <a href="https://material.angularjs.org/latest/demo/datepicker" target="_blank">date picker component</a>. Just the static image is gorgeous!</p>
+<p><img src="{{ site.baseurl }}/img/date-picker.png" alt="Date Picker" width="348" height="400" class="alignnone size-full wp-image-1126" /></p>
+<p>I encourage everyone to go to the website and actually touch the component and see how well it moves on the page. Now pull up the same page on a mobile device and see how well that moves. I had a mic drop moment with a client the other day when I showed them this demo. These are the kind of moments where you win friends and influence people.</p>
+<h2>4. Components</h2>
+<p>If Material Design is the heart and soul of the operation, then Angular Material would be the muscles. At last count, there were almost 50 Angular components at our disposal within our Angular application.</p>
+<p>Need a button? No problem!</p>
+<p>{% highlight html %}<br />
+<md-button>{{title1}}</md-button><br />
+{% endhighlight %}</p>
+<p>Your button really needs to be a link? All you have to do is say so.</p>
+<p>{% highlight html %}<br />
+<md-button ng-href="{{googleUrl}}" target="_blank">Default Link</md-button><br />
+{% endhighlight %}</p>
+<p>How about that date picker? Done.</p>
+<p>{% highlight html %}</p>
+<div ng-controller="AppCtrl">
+  <md-content></p>
+<h4>Standard date-picker</h4>
+<p>    <md-datepicker ng-model="myDate" md-placeholder="Enter date"></md-datepicker><br />
+  </md-content>
+</div>
+<p>{% endhighlight %}</p>
+<p>The documentation for Angular Material is <strong>full</strong> of working code snippets that you can grab and drop in your application immediately. This was how I learned Angular Material after I over-promised at the hackathon I mentioned early. I personally appreciate it when documentation is so good that the examples can be used right out of the box.</p>
+<p>Angular Material also ships with some critical services that make managing dynamically placed elements such as a dialog or bottom sheet a snap.</p>
+<p>For instance, we can control the insertion and visibility of a bottom sheet using the <strong>$mdBottomSheet</strong> service as follows:</p>
+<p>[js]<br />
+var app = angular.module('app', ['ngMaterial']);<br />
+app.controller('MyController', function($scope, $mdBottomSheet) {<br />
+  $scope.openBottomSheet = function() {<br />
+    $mdBottomSheet.show({<br />
+      template: '<md-bottom-sheet>Hello!</md-bottom-sheet>'<br />
+    });<br />
+  };<br />
+});<br />
+[/js]</p>
+<h2>5. Accessibility</h2>
+<p>Accessibility is one of the most important considerations to be factored into a web application and, more often than not, it does not even land on the radar of topics of conversation. I am willing to admit that this was not a factor that I intrinsically took into consideration when building Angular applications. My worldview shifted when I met <a href="https://twitter.com/marcysutton" target="_blank">Marcy Sutton</a> and saw the awesome work she was doing with accessibility on the web. In terms of social impact, one of the most important features of Angular Material is that accessibility is baked right into the project.</p>
+<p>Check out this awesome talk that Marcy gave at ngEurope 2014 which changed everything for me.</p>
+<p><iframe width="960" height="540" src="https://www.youtube.com/embed/dmYDggEgU-s" frameborder="0" allowfullscreen></iframe></p>
+<p>One example of how accessibility is front and center of the framework is the prominence that the <strong>aria-label</strong> attribute plays amongst the component set. For instance, if default text is not found on a button and <strong>aria-label</strong> is not defined, Angular Material will log an error in the console.</p>
+<p><img src="{{ site.baseurl }}/img/md-accessibility-300x186.png" alt="Angular Material Accessibility" width="300" height="186" class="alignnone size-medium wp-image-1127" /></p>
+<h2>Conclusion</h2>
+<p>On a personal level, Angular Material amplifies the feeling that I get when I work with Angular in that I never stop being impressed with the power and functionality that it brings to how I build web applications. I am always impressed at how I am <b>always</b> impressed with Angular and by extension, Angular Material.</p>
+<p>Just to summarize my points.</p>
+<ul>
+<li>Material Design is the soul of Angular Material and it makes great design the default.</li>
+<li>Layout in Angular Material is sensible and easy to articulate.</li>
+<li>The aesthetic index of Angular Material right out of the box is off the charts. It is just so smooth!</li>
+<li>Angular Material ships with a huge set of components that reduces the complexity of Material Design to nothing more than building out a regular Angular application.</li>
+<li>Accessibility is baked right into Angular Material and which should be important to everyone because it is everything to someone.</li>
+</ul>
+<p>I want to give a huge shout out to my friend and mentor, <a href="https://twitter.com/thomasburleson" target="_blank">Thomas Burleson</a> for the amazing work that he has done with Angular Material. Every time I use the framework, I pour out a little champagne in his name for the amount of time it saves me.</p>
+<h2>Resources</h2>
+<p><a href="https://material.angularjs.org/latest/" target="_blank">Angular Material Website</a></p>
+<p><a href="https://www.google.com/design/spec/material-design/" target="_blank">Material Design Website</a></p>
+<p><a href="https://docs.angularjs.org/guide/accessibility" target="_blank">Angular Developer Guide: Accessibility</a></p>
+<p><a href="http://www.w3.org/TR/css3-flexbox/" target="_blank">Flexbox Specification</a></p>
+<div class="md-card aligncenter">
+<img src="{{ site.baseurl }}/img/afd-logo-150x150.jpg" alt="Angular for Designers" width="150" height="150" class="size-thumbnail wp-image-1131" /></p>
+<div class="md-card-title">
+<span class="md-headline center"><br />
+Take your layouts to the next level with Angular Material<br />
+</span>
+</div>
+<div class="md-card-content">
+Grab my new course: <strong>Just Enough Angular for Designers</strong> and be up and running with Angular Material in no time.<br />Get it for a limited, introductory price of $10!<br />
+<a href="https://www.udemy.com/just-enough-angular-for-designers/?couponCode=NG-MATERIAL" onclick="_gaq.push(['_trackEvent', 'outbound-article', 'https://www.udemy.com/just-enough-angular-for-designers/?couponCode=NG-MATERIAL', 'Supercharge My Layouts']);" class="md-button" target="_blank"><span>Supercharge My Layouts</span></a>
+</div>
+</div>

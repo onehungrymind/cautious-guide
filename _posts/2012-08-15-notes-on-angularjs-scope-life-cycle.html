@@ -1,0 +1,88 @@
+---
+layout: post
+title: Notes On AngularJS Scope Life-Cycle
+date: 2012-08-15 04:49:45.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- jQuery
+tags: []
+meta:
+  _edit_last: '8'
+  layout: default
+  hide_post_title: default
+  unlink_post_title: default
+  hide_post_meta: default
+  hide_post_date: default
+  hide_post_image: default
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>I have had the incredible good fortune of being part of some very talented developers ramping up on AngularJS. It is inevitable that questions surrounding scope life-cycle work their way into the process. These usually come in the form of "But how does AngularJS know when this value has changed so that it can update bindings?" or "Hey I am listening for this DOM event in my directive and when I update scope, nothing is happening... what is the deal?" or even "Oh my goodness! How does it do that!? IS IT MAGIC!?"</p>
+<p>At the core of AngularJS is the scope life-cycle and so I wanted to take this opportunity to elaborate on some of the fundamental aspects of how scope works in AngularJS. I have tried to distill this concept down to the most important bits so that a new developer could grasp scope life-cycle in less than 10 minutes and experienced developers could explain it in less than 10 minutes.</p>
+<h2>First Things First</h2>
+<p>Misko Hevery wrote a <strong>brilliant</strong> explanation of dirty checking vs change listeners on Stack Overflow that I think should be required reading for anyone coming into AngularJS. I hereby vote that it be included in the AngularJS docs IMMEDIATELY!</p>
+<p><a href="http://stackoverflow.com/questions/9682092/databinding-in-angularjs/9693933#9693933" title="Dirty Checking vs Change Listeners" target="_blank">http://stackoverflow.com/questions/9682092/databinding-in-angularjs/9693933#9693933</a></p>
+<p>I want to point out a few things as it relates to what I want to talk about here:</p>
+<ol>
+<li>AngularJS compares a value with its previous value and if it has changed then a change event is fired. This is dirty checking in a nutshell.</li>
+<li>In AngularJS, a digest is the cycle that performs dirty checking. This is initiated via $digest().</li>
+<li>If something happens outside of AngularJS, you need to let AngularJS know to execute a digest cycle and you do that via $apply which calls $digest.</li>
+</ol>
+<p>Now on to the nuts and bolts! I think that the scope life-cycle IS dirty checking and all the broad strokes can be summarized in $digest, watchExpressions and $apply.</p>
+<h2>$digest</h2>
+<p>This is the "heartbeat" of an AngularJS application. $digest processes all the watchExpressions for the current scope and its children.</p>
+<p>So what happens when a watchExpression is processed? I will get into that a bit more when I talk about watchExpressions, but basically the value of the current watchExpression is compared with the value of the previous watchExpression, and if they do not match then it is "dirty" and a listener is fired.</p>
+<p>With that said, you should not call $digest directly but call $apply which will force a $digest cycle. I will get more into the reasoning behind this in just a moment.</p>
+<h2>watchExpressions</h2>
+<p>Behind every $digest cycle is a good watchExpression. watchExpressions return the value of what is being watched on every $digest cycle. This is the trenches of dirty checking. If the value of the current watchExpression call and the previous watchExpression call do not match then a listener is fired.</p>
+<p>Most watchExpressions are created implicitly within AngularJS, but you can also create them manually. Let me show you how to do that:</p>
+<p>[js]<br />
+scope.$watch('name', function(newValue, oldValue) { /* Do something clever here */ });<br />
+[/js]</p>
+<p>Most of the time a watchExpression is just the name of a property you want to watch. In this example the watchExpression is "name". If "name" changes then the listener function is called.</p>
+<p><strong>angular.equals</strong> is used to determine the equality of the two expressions while <strong>angular.copy</strong> is used to store the value of current value of a watchExpression for later comparison.</p>
+<p>It is also important to understand that when one listener fires, it may change the model which will fire other listeners and so the watchers keep re-running until no more watchers are firing.</p>
+<h2>$apply</h2>
+<p>I like to think of $apply as a courier service that the outside world can recruit to tell AngularJS that something has happened and drop off an optional expression to be handled.</p>
+<p>I mentioned previously that you use $apply to force a $digest cycle, but that is just one part of what happens with $apply. To follow the courier analogy, $apply hand delivers the message and possibly a package to the sweet lady at the front desk named $evalerie, but you can call her $eval. GROAN! Okay! Back on track! $eval checks to make sure that $apply dropped off a legitimate expression. If something is wrong while it is being evaluated then an exception is thrown and passed to the $exceptionHandler service. From there, $digest is called to kick off the $digest cycle.</p>
+<p>Application level error handling is a nice feature that I highly recommend you utilize, especially as your application grows in complexity. The fact that we get it for free with $apply is really cool and why you should use it over $digest.</p>
+<h4>So when do you use $apply?</h4>
+<p>Good question! One of the main reasons you use $apply is when browser DOM events have triggered outside of AngularJS. jQuery I'm looking at you!</p>
+<p>You may also need to use it for setTimeout events, XHR callbacks, and integrating with 3rd party libraries.</p>
+<p>Here is a fiddle I put together to illustrate a use of $apply<br />
+<a href="http://jsfiddle.net/simpulton/huKHQ/" title="$apply() jsFiddle" target="_blank">http://jsfiddle.net/simpulton/huKHQ/</a></p>
+<p>I freely admit that this example is a bit contrived - it stems from a real question my buddy Fritz had a few days ago.</p>
+<p>The part I want to draw your attention to is in the code below:</p>
+<p>[js]<br />
+$('.testButtonWithApply').on('click', function(){<br />
+    $scope.$apply(function() {<br />
+        $scope.handleClick('Scope apply');<br />
+    });<br />
+});</p>
+<p>$('.testButtonWithoutApply').on('click', function(){<br />
+    $scope.handleClick('This will not work');<br />
+});<br />
+[/js]</p>
+<p>Both functions are listening for events via jQuery and then making a request back into AngularJS from the event handler. The difference between the two is that I have wrapped the handleClick function in a function expression that I pass to $apply. I could have just called handleClick and THEN $apply but it is better to use the function expression so you get error handling.</p>
+<p>More than once calling $apply has been the difference between me getting the behavior I expected, and crickets as nothing happened at all.</p>
+<h2>Conclusion</h2>
+<p>This concludes my primer on AngularJS scope life-cycle and what is behind the "magic" that blew me away when I started digging into AngularJS.</p>
+<p>So to summarize, there is an internal cycle called $digest that runs through the application and executes watch expressions and compares the value returned with the previous value and if the values do not match then a listener is fired. This $digest cycle keeps looping until no more listeners are fired. You can call $digest directly, but it is recommended that you call $apply because it wraps a $digest call with an error handling mechanism. You call $apply when something outside of AngularJS happens that you need to notify AngularJS about. Well, I guess when you say it like that... it doesn't seem so hard. Cheers!</p>
+<h2>Resources</h2>
+<p>The Misko Hevery Breakdown<br />
+<a href="http://stackoverflow.com/questions/9682092/databinding-in-angularjs/9693933#9693933" title="Dirty Checking vs Change Listeners" target="_blank">http://stackoverflow.com/questions/9682092/databinding-in-angularjs/9693933#9693933</a></p>
+<p>$apply Example<br />
+<a href="http://jsfiddle.net/simpulton/huKHQ/" title="$apply() jsFiddle" target="_blank">http://jsfiddle.net/simpulton/huKHQ/</a></p>
+<p>And be sure to check out the documentation. I have read it like ten times and am still learning things.<br />
+<a href="http://docs.angularjs.org/api/ng.$rootScope.Scope" title="AngularJS API - Scope" target="_blank">http://docs.angularjs.org/api/ng.$rootScope.Scope</a></p>

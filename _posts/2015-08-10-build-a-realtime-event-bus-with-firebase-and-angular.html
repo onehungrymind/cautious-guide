@@ -1,0 +1,414 @@
+---
+layout: post
+title: Build a Realtime Event Bus with Firebase and Angular
+date: 2015-08-10 16:58:57.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- Firebase
+- JavaScript
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '1068'
+  _yoast_wpseo_primary_category: ''
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>Why an Event Bus?</h2>
+<p>"We think Firebase is just what we need to get rid of this crazy long polling stuff we are doing but what about HIPAA compliance?" This was the challenge that I found myself in awhile back as I was working with a health care startup. Realtime capabilities was going to take their application to the next level but they had some serious considerations around how they could store their data as it had potentially sensitive patient information. The solution is to use Firebase as an event bus that monitors a minimal amount of information on the Firebase servers and when a change is detected, your application then queries the main servers for the full object.</p>
+<p>I have prepared a handy diagram to illustrate the event flow as you can see below.</p>
+<p><img src="{{ site.baseurl }}/img/event-bus-diagram.jpg" alt="Event Bus Diagram" width="900" height="643" class="alignnone size-full wp-image-1069" /></p>
+<p>To put this into concrete terms, I have a medical app that stores medical supply orders that I want to monitor the progress of the order as it is being fulfilled. All of the orders would live on the main server with a corresponding Firebase record that contained a unique ID and a timestamp. When an order was updated at the main server, the server would update the timestamp at the Firebase record using the REST API that comes with Firebase. All connected clients would detect that the timestamp of the Firebase object was updated and would then make a REST call to the main server to get the new and updated order.</p>
+<p>For the sake of demonstration, I am using Firebase to play the part of the compliant server as well as the realtime event bus. Before we dig into the code, let us take a quick moment to look at our data structures at the servers.</p>
+<p>The full object has an <strong>ID</strong> property as its key and a <strong>title</strong> and <strong>description</strong> property as you can see below.</p>
+<p><img src="{{ site.baseurl }}/img/full-data.png" alt="full-data" width="536" height="284" class="alignnone size-full wp-image-1065" /></p>
+<p>The condensed, realtime object shares the same <strong>ID</strong> for its key and has a <strong>update_at</strong> property which contains a timestamp. Other than the actual <strong>ID</strong> to the object, there is no personally identifying data being stored in the realtime object.</p>
+<p><img src="{{ site.baseurl }}/img/realtime-data.png" alt="realtime-data" width="578" height="206" class="alignnone size-large wp-image-1066" /></p>
+<p>The source files for this example are structured to represent two entirely separate entities. The two main folders in the project are the <strong>server</strong> folder and the <strong>realtime</strong> folder. The <strong>server</strong> folder represents the compliant server portion of the equation while the <strong>realtime</strong> folder represents the event bus portion of the equation.</p>
+<p><img src="{{ site.baseurl }}/img/file-structure-1024x374.png" alt="file-structure" width="1024" height="374" class="alignnone size-large wp-image-1067" /></p>
+<p>I believe we are ready to get started, so grab the code and let's go!</p>
+<p>[button link="https://github.com/simpulton/angular-firebase-event-bus" size="large" window="yes"]Code[/button]</p>
+<h2>The Compliant Server</h2>
+<p><img src="{{ site.baseurl }}/img/event-bus-step-one.jpg" alt="event-bus-step-one" width="400" height="286" class="alignnone size-full wp-image-1070" /></p>
+<p>We are going to start with the REST client that communicates with the compliant server. This majority of this section is going to be a composition of basic Angular techniques but still worth covering so that we can understand the entire lifecycle of the event bus.</p>
+<p>The first piece to communicating with the compliant server is the <strong>RESTService</strong> which uses the <strong>$http</strong> service to perform standard REST calls. We have two convenience functions, <strong>getUrl</strong> and <strong>getUrlWithId</strong> to construct our endpoints. We are pointing to the base URI which we defined as a constant service called <strong>RESTFUL_URI</strong> in the <strong>server/server.js</strong> file. We are pointing to the <strong>orders</strong> endpoint and adding the <strong>.json</strong> extension because this is what Firebase requires.</p>
+<blockquote><p>
+I have used this technique on a few different backends and this part will change slightly depending on what you are using. The critical point is that you can make RESTful calls to your server.
+</p></blockquote>
+<p>And from here we have some pretty standard REST calls that are wrapped in the <strong>all</strong>, <strong>fetch</strong>, <strong>create</strong>, <strong>update</strong> and <strong>destroy</strong> methods.</p>
+<p>[js]<br />
+app.factory('RESTService', function ($http, RESTFUL_URI) {<br />
+  var getUrl = function () {<br />
+    return RESTFUL_URI + 'orders.json';<br />
+  };</p>
+<p>var getUrlWithId = function (orderId) {<br />
+    return RESTFUL_URI + 'orders/' + orderId + '.json';<br />
+  };</p>
+<p>var all = function () {<br />
+    return $http.get(getUrl());<br />
+  };</p>
+<p>var fetch = function (orderId) {<br />
+    return $http.get(getUrlWithId(orderId));<br />
+  };</p>
+<p>var create = function (title, description) {<br />
+    var params = {<br />
+      title: title,<br />
+      description: description<br />
+    };<br />
+    return $http.post(getUrl(), params);<br />
+  };</p>
+<p>var update = function (orderId, title, description) {<br />
+    var params = {<br />
+      title: title,<br />
+      description: description<br />
+    };<br />
+    return $http.put(getUrlWithId(orderId), params);<br />
+  };</p>
+<p>var destroy = function (orderId) {<br />
+    return $http.delete(getUrlWithId(orderId));<br />
+  };</p>
+<p>return {<br />
+    all: all,<br />
+    fetch: fetch,<br />
+    create: create,<br />
+    update: update,<br />
+    destroy: destroy<br />
+  };<br />
+});<br />
+[/js]</p>
+<p>Now that we have a way to communicate with the compliant server, it is time to build out the controller what will consume the <strong>RESTService</strong> service. In the <strong>ServerCtrl</strong>, we have create a few basic methods to marshall events from the view to our <strong>RESTService</strong> service. The methods in the <strong>ServerCtrl</strong> are fairly self-documenting and do exactly what they say. The one thing that I would like to point out is that I have left markers in the code for where we are going to hook up our calls to the realtime objects in the completed promises of our initial REST calls. We will fill those out in just a moment.</p>
+<p>[js]<br />
+app.controller('ServerCtrl', function ($scope, RESTService, RealtimeService) {<br />
+  var server = this;</p>
+<p>server.newOrder = {<br />
+    title: '',<br />
+    description: ''<br />
+  };</p>
+<p>server.resetForm = function () {<br />
+    server.newOrder = {<br />
+      title: '',<br />
+      description: ''<br />
+    };<br />
+  };</p>
+<p>server.getOrders = function () {<br />
+    RESTService.all()<br />
+      .then(function (result) {<br />
+        server.orders = result.data !== 'null' ? result.data : {};<br />
+      });<br />
+  };</p>
+<p>server.createOrder = function (title, description) {<br />
+    RESTService.create(title, description)<br />
+      .then(function (result) {<br />
+        server.getOrders();<br />
+        server.resetForm();<br />
+        // Realtime stuff coming<br />
+      });<br />
+  };</p>
+<p>$scope.updateOrder = function (id, title, description) {<br />
+    RESTService.update(id, title, description)<br />
+      .then(function (result) {<br />
+        // Realtime stuff coming<br />
+      });<br />
+  };</p>
+<p>$scope.removeOrder = function (id) {<br />
+    RESTService.destroy(id)<br />
+      .then(function () {<br />
+        server.getOrders();<br />
+        // Realtime stuff coming<br />
+      });<br />
+  };</p>
+<p>server.getOrders();<br />
+});<br />
+[/js]</p>
+<p>Firebase has provided realtime libraries for just about major language and web framework that exists but it is not as widely known that you can interact with Firebase endpoints via a REST API as well. This was implied as we are using Firebase to approximate our compliant server, but it becomes a bit more explicit when we use REST to communicate to an object that we are also using AngularFire to monitor in realtime. Our <strong>RealtimeService</strong> looks quite similar to our <strong>RESTService</strong> in terms of structure, albeit slightly more concise as we only need an <strong>update</strong> and <strong>destroy</strong> method. Notice that in the <strong>update</strong> method, we are setting the payload with a single parameter of <strong>update_at</strong> that is set to a current timestamp.</p>
+<blockquote><p>
+The reason we only have an <strong>update</strong> method and not a <strong>create</strong> method is that Firebase will go ahead and create an object at a specific endpoint if it doesn't actually exist. Convenient!
+</p></blockquote>
+<p><img src="{{ site.baseurl }}/img/event-bus-step-two.jpg" alt="event-bus-step-two" width="400" height="286" class="alignnone size-large wp-image-1073" /></p>
+<p>[js]<br />
+app.factory('RealtimeService', function ($http, FIREBASE_URI) {<br />
+  var getUrlWithId = function (id) {<br />
+    return FIREBASE_URI + 'realtime-orders/' + id + '.json';<br />
+  };</p>
+<p>var update = function (id) {<br />
+    var params = {updated_at: new Date().toString()};<br />
+    return $http.put(getUrlWithId(id), params);<br />
+  };</p>
+<p>var destroy = function (id) {<br />
+    return $http.delete(getUrlWithId(id));<br />
+  };</p>
+<p>return {<br />
+    update: update,<br />
+    destroy: destroy<br />
+  };<br />
+});<br />
+[/js]</p>
+<p>With the <strong>RealtimeService</strong> in place, we can update our <strong>ServerCtrl</strong> to not only communicate with the compliant server but also with Firebase. When a new object is created, we will call <strong>RealtimeService.update</strong> and pass in the <strong>ID</strong> of the newly created object. In this case, it comes in the form of <strong>result.data.name</strong> since that is how Firebase returns the object. You will need to update this to match whatever format your compliant server uses.</p>
+<p>[js]<br />
+server.createOrder = function (title, description) {<br />
+  RESTService.create(title, description)<br />
+    .then(function (result) {<br />
+      server.getOrders();<br />
+      server.resetForm();<br />
+      RealtimeService.update(result.data.name)<br />
+    });<br />
+};<br />
+[/js]</p>
+<p>It is a bit easier for the <strong>RealtimeService.update</strong> method as we already know the <strong>ID</strong> of the object that we just updated.</p>
+<p>[cc lang="javascript"]<br />
+$scope.updateOrder = function (id, title, description) {<br />
+  RESTService.update(id, title, description)<br />
+    .then(function (result) {<br />
+      RealtimeService.update(id);<br />
+    });<br />
+};<br />
+[/js]</p>
+<p>The same goes for the <strong>RealtimeService.destroy</strong> method as we only need to send in the <strong>ID</strong> of the object we just destroyed.</p>
+<p>[js]<br />
+$scope.removeOrder = function (id) {<br />
+  RESTService.destroy(id)<br />
+    .then(function () {<br />
+      server.getOrders();<br />
+      RealtimeService.destroy(id);<br />
+    });<br />
+};<br />
+[/js]</p>
+<p>This completes the necessary commentary on how the code works for the RESTful client that communicates with the compliant server. The three main parts to making this work are the <strong>RESTService</strong>, <strong>RealtimeService</strong> and the <strong>ServerCtrl</strong> which coordinates the two services.</p>
+<blockquote><p>
+We are coordinating the communication between the compliant server and Firebase from within a web application, but I have also seen this done entirely at the server level as well.
+</p></blockquote>
+<p><img src="{{ site.baseurl }}/img/server-client-1024x341.png" alt="server-client" width="1024" height="341" class="alignnone size-large wp-image-1064" /></p>
+<h2>The Realtime Client</h2>
+<p><img src="{{ site.baseurl }}/img/event-bus-step-three.jpg" alt="event-bus-step-three" width="400" height="286" class="alignnone size-large wp-image-1072" /></p>
+<p>We are now at the realtime, event bus portion of this example which is where things really start to get interesting! We are going to start by grabbing a realtime collection of our items via the <strong>RealtimeService</strong> using the <strong>$firebaseArray</strong> service. Creating a realtime collection in Firebase is a two-step process that involves instantiating a new Firebase reference and passing in the URI to the endpoint that contains your realtime data. In the case of the code below, we are pointing it to the <strong>realtime-orders</strong> node that exists at the <strong>FIREBASE_URI</strong> endpoint. We then instantiate the collection by passing our newly created <strong>ref</strong> to the <strong>$firebaseArray</strong> service which returns all of the items at that reference with realtime capabilities. We then make that collection available by returning it via the <strong>all</strong> method.</p>
+<p>[js]<br />
+app.factory('RealtimeService', function ($firebaseArray, FIREBASE_URI) {<br />
+  var ref = new Firebase(FIREBASE_URI + 'realtime-orders');<br />
+  var orders = $firebaseArray(ref);</p>
+<p>var all = function () {<br />
+    return orders<br />
+  };</p>
+<p>return {<br />
+    all: all<br />
+  };<br />
+});<br />
+[/js]</p>
+<p>And now we can make our collection available to our view by binding it to the <strong>realtime.orders</strong> property in our <strong>RealtimeCtrl</strong>.</p>
+<p>[js]<br />
+app.controller('RealtimeCtrl', function ($scope, RESTService, RealtimeService, CurrentOrderService) {<br />
+  var realtime = this;<br />
+  realtime.orders = RealtimeService.all();<br />
+});<br />
+[/js]</p>
+<p>We then bind to the collection in our view just like any other collection as you can see in the code below. We are building out a table with a standard <strong>ng-repeat="order in realtime.orders"</strong>.</p>
+<p>{% highlight html %}</p>
+<table class="table edit">
+<thead>
+<tr>
+<th>ID</th>
+<th>Updated At</th>
+</tr>
+</thead>
+<tbody>
+<tr ng-repeat="order in realtime.orders">
+<td>{{order.$id}}</td>
+<td>{{order.updated_at}}</td>
+</tr>
+</tbody>
+</table>
+<p>{% endhighlight %}</p>
+<p>The real "magic" of this example up to this point is in the two lines below. We are creating a new Firebase reference and then instantiating a realtime collection using <strong>$firebaseArray</strong>.</p>
+<p>[js]<br />
+var ref = new Firebase(FIREBASE_URI + 'realtime-orders');<br />
+var orders = $firebaseArray(ref);<br />
+[/js]</p>
+<p>By creating a general collection at <strong>realtime.orders</strong>, we can know when our collection is modified as a whole but we do not have a good way of knowing what was updated at an atomic level. Because Firebase references are extremely lightweight, we are going to create an <strong>order</strong> directive to monitor each individual <strong>order</strong> for changes. This also allows us to encapsulate some additional functionality within our directive. To simplify things, we are going to examine the structure of our directive without any of the controller logic in it for now. In our directive definition object, we are setting <strong>scope:true</strong> so that each directive instance gets a new scope. We are also using the new <strong>bindToController</strong> syntax, to bind the <strong>orderId</strong> property to our controller. To complete our directive definition object, we are defining our <strong>controller</strong> and <strong>controllerAs</strong> properties.</p>
+<p>[js]<br />
+app.directive('order',<br />
+  function ($rootScope, $firebaseObject, RESTService, FIREBASE_URI, CurrentOrderService) {<br />
+    var controller = function () {<br />
+      // Pending<br />
+    };</p>
+<pre><code>return {
+  scope: true,
+  bindToController: {
+    orderId: '@'
+  },
+  controller: controller,
+  controllerAs: 'orderCtrl'
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>We are also injecting a few different services which we will elaborate on in just a moment. The first order of business is to create a realtime reference to the <strong>order</strong> object that our directive represents. We will create this almost the exact same way as we created our <strong>orders</strong> collection but we will be using the <strong>$firebaseObject</strong> service instead. The <strong>$firebaseObject</strong> service is useful for monitoring a single object instead of an array of objects as we saw in the <strong>$firebaseArray</strong> example above. Once we have created the correct Firebase reference, we pass that into the <strong>$firebaseObject</strong> service which will return an <strong>order</strong>  object that has realtime capabilities.</p>
+<p>[js]<br />
+app.directive('order',<br />
+function ($firebaseObject, FIREBASE_URI, RESTService, CurrentOrderService) {<br />
+var controller = function () {<br />
+  var orderCtrl = this,<br />
+    ref = new Firebase(FIREBASE_URI + 'realtime-orders/' + orderCtrl.orderId);</p>
+<p>orderCtrl.order = $firebaseObject(ref);</p>
+<p>return {<br />
+  scope: true,<br />
+  bindToController: {<br />
+    orderId: '@'<br />
+  },<br />
+  controller: controller,<br />
+  controllerAs: 'orderCtrl'<br />
+};<br />
+});<br />
+[/js]</p>
+<p>Our realtime <strong>order</strong> object has a few events that we can use to know when a change has occurred. Because a realtime object fires change events as it is loading, we will wait to start watching it until the <strong>$loaded</strong> event has fired. Once the <strong>$loaded</strong> event has fired, we then start to monitor it via the <strong>$watch</strong> method. When a change is detected, we will call the <strong>getOrder</strong> method and pass in <strong>orderId</strong>.</p>
+<p>[js]<br />
+app.directive('order',<br />
+function ($firebaseObject, FIREBASE_URI, RESTService, CurrentOrderService) {<br />
+var controller = function () {<br />
+  var orderCtrl = this,<br />
+    ref = new Firebase(FIREBASE_URI + 'realtime-orders/' + orderCtrl.orderId);</p>
+<p>orderCtrl.order = $firebaseObject(ref);</p>
+<p>orderCtrl.order.$loaded()<br />
+    .then(function () {<br />
+      orderCtrl.order.$watch(function () {<br />
+        orderCtrl.getOrder(orderCtrl.orderId);<br />
+      });<br />
+    });</p>
+<p>return {<br />
+  scope: true,<br />
+  bindToController: {<br />
+    orderId: '@'<br />
+  },<br />
+  controller: controller,<br />
+  controllerAs: 'orderCtrl'<br />
+};<br />
+});<br />
+[/js]</p>
+<p>And this entire example comes down to this one method. The entire event bus happens right here. In the <strong>orderCtrl.getOrder</strong> method, we call the <strong>RESTService</strong> to fetch the full object based on the <strong>id</strong> of the realtime object that was just updated. Once we have the full object, we are going to send it to the <strong>CurrentOrderService</strong> so that we can surface the details of what object was just updated.</p>
+<p><img src="{{ site.baseurl }}/img/event-bus-step-four.jpg" alt="event-bus-step-four" width="400" height="286" class="alignnone size-large wp-image-1071" /></p>
+<p>[js]<br />
+app.directive('order',<br />
+function ($firebaseObject, FIREBASE_URI, RESTService, CurrentOrderService) {<br />
+var controller = function () {<br />
+  var orderCtrl = this,<br />
+    ref = new Firebase(FIREBASE_URI + 'realtime-orders/' + orderCtrl.orderId);</p>
+<p>orderCtrl.order = $firebaseObject(ref);</p>
+<p>orderCtrl.order.$loaded()<br />
+    .then(function () {<br />
+      orderCtrl.order.$watch(function () {<br />
+        orderCtrl.getOrder(orderCtrl.orderId);<br />
+      });<br />
+    });</p>
+<p>orderCtrl.getOrder = function (id) {<br />
+    RESTService.fetch(id)<br />
+      .then(function (result) {<br />
+        CurrentOrderService.setCurrentOrder(result.data);<br />
+      });<br />
+  };<br />
+};</p>
+<p>return {<br />
+  scope: true,<br />
+  bindToController: {<br />
+    orderId: '@'<br />
+  },<br />
+  controller: controller,<br />
+  controllerAs: 'orderCtrl'<br />
+};<br />
+});<br />
+[/js]</p>
+<p>With our <strong>order</strong> directive created, we will update our <strong>tr</strong> element slight to include our new addition. We are instantiating the directive by adding the <strong>order</strong> attribute and passing in the appropriate <strong>orderId</strong> via <strong>order-id="{{order.$id}}"</strong>.</p>
+<p>{% highlight html %}</p>
+<table class="table edit">
+<thead>
+<tr>
+<th>ID</th>
+<th>Updated At</th>
+</tr>
+</thead>
+<tbody>
+<tr ng-repeat="order in realtime.orders" order order-id="{{order.$id}}">
+<td>{{orderCtrl.order.$id}}</td>
+<td>{{orderCtrl.order.updated_at}}</td>
+</tr>
+</tbody>
+</table>
+<p>{% endhighlight %}</p>
+<p>The realtime version of the <strong>RESTService</strong> is incredibly simple with a single <strong>fetch</strong> method but I wanted to include it here for reference purposes.</p>
+<p>[js]<br />
+app.factory('RESTService', function ($http, RESTFUL_URI) {<br />
+  var getUrlWithId = function (orderId) {<br />
+    return RESTFUL_URI + 'orders/' + orderId + '.json';<br />
+  };</p>
+<p>var fetch = function (orderId) {<br />
+    return $http.get(getUrlWithId(orderId));<br />
+  };</p>
+<p>return {<br />
+    fetch: fetch<br />
+  };<br />
+});<br />
+[/js]</p>
+<p>The <strong>CurrentOrderService</strong> is a basic service that is essentially a getter and setter for the <strong>currentOrder</strong> object. The only twist to this is that we are using <strong>$rootScope</strong> as an internal event bus to broadcast to the rest of the application that there was an <strong>currentOrderUpdated</strong> event.</p>
+<blockquote><p>
+I rarely use <strong>$rootScope</strong> directly except for an event bus to broadcast events to the rest of the application. This is handy because Angular events only happen on <strong>$scope</strong> objects and by using <strong>$rootScope</strong>, we can guarantee that all scope objects are notified because they are all children of <strong>$rootScope</strong>.
+</p></blockquote>
+<p>[js]<br />
+app.factory('CurrentOrderService', function ($rootScope) {<br />
+  var currentOrder = {};</p>
+<p>var getCurrentOrder = function () {<br />
+    return currentOrder;<br />
+  };</p>
+<p>var setCurrentOrder = function (order) {<br />
+    currentOrder = order;<br />
+    $rootScope.$broadcast('currentOrderUpdated');<br />
+  };</p>
+<p>return {<br />
+    getCurrentOrder: getCurrentOrder,<br />
+    setCurrentOrder: setCurrentOrder<br />
+  };<br />
+});<br />
+[/js]</p>
+<p>In our <strong>RealtimeCtrl</strong>, we then listen for the <strong>currentOrderUpdated</strong> using <strong>$scope.$on</strong> and use that event to grab the latest <strong>currentOrder</strong> object.</p>
+<p>[js]<br />
+app.controller('RealtimeCtrl', function ($scope, RESTService, RealtimeService, CurrentOrderService) {<br />
+  var realtime = this;</p>
+<p>realtime.orders = RealtimeService.all();<br />
+  realtime.currentOrder = CurrentOrderService.getCurrentOrder();</p>
+<p>$scope.$on('currentOrderUpdated', function () {<br />
+    realtime.currentOrder = CurrentOrderService.getCurrentOrder();<br />
+  });<br />
+});<br />
+[/js]</p>
+<p>And then we can display the order details as we have in the HTML below.</p>
+<p>{% highlight html %}</p>
+<table class="table edit">
+<thead>
+<tr>
+<th>Title</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{{realtime.currentOrder.title}}</td>
+<td>{{realtime.currentOrder.description}}</td>
+</tr>
+</tbody>
+</table>
+<p>{% endhighlight %}</p>
+<p><img src="{{ site.baseurl }}/img/realtime-client-1024x371.png" alt="realtime-client" width="1024" height="371" class="alignnone size-large wp-image-1063" /></p>
+<h2>Review</h2>
+<p>And there we have it! This is the technique that I use to provide realtime capabilities to compliant servers that store sensitive information. The general premise is that we are only storing an ID and a timestamp within Firebase and using that to serve as an event bus to the complete data at the compliant server.</p>
+<p>It is my fondest desire that someone will take the material I share and use it to make lots of money. That would be super rad! With that said, I am not a compliance authority and / or a lawyer so double check with the powers that be before rolling your own version out to production.</p>
+<h2>Resources</h2>
+<p><a href="https://www.firebase.com/docs/rest/" target="_blank">Firebase REST API Documentation</a></p>
+<p><a href="https://www.firebase.com/docs/web/libraries/angular/index.html" target="_blank">AngularFire Documentation</a></p>
+<p><a href="https://www.firebase.com/docs/web/libraries/angular/api.html" target="_blank">AngularFire API</a></p>
+<p>[button link="https://github.com/simpulton/angular-firebase-event-bus" size="large" window="yes"]Code[/button]</p>

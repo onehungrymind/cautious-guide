@@ -1,0 +1,158 @@
+---
+layout: post
+title: AngularJS Sticky Notes Pt 1 - Architecture
+date: 2012-06-26 04:00:09.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- jQuery
+tags: []
+meta:
+  _edit_last: '8'
+  layout: default
+  hide_post_title: default
+  unlink_post_title: default
+  hide_post_meta: default
+  hide_post_date: default
+  hide_post_image: default
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>This is Part One of a series that is going to deconstruct the lessons I learned from building AngularJS Sticky Notes. This is going to be different from other posts that I have done in that we will be starting with a finished product and working backwards. I will do my best to approach it in a way that can be translated to how applications are really written. From nothing, through many, many iterations and edits.</p>
+<p>This fiddle can be found here:<br />
+<a title="fiddle" href="http://jsfiddle.net/simpulton/VJ94U/" target="_blank">http://jsfiddle.net/simpulton/VJ94U/</a></p>
+<p>The git repository is here:<br />
+<a title="github repository" href="https://github.com/simpulton/angular-sticky-notes" target="_blank">https://github.com/simpulton/angular-sticky-notes</a></p>
+<p>My goal is that the passerby will see something they like about AngularJS and try it. If you have already spent some time with AngularJS, I am proof that there is still so much to learn. Let's get started!</p>
+<h2>Lesson 1: Make friends and listen</h2>
+<p>I owe a great deal of gratitude to the amazing AngularJS community, and it was because of them that a lot of the rough edges of the application were smoothed out. I thought I had built something really clever, and was humbled and amazed to find that there were dozens of things that I could have done better.</p>
+<p>So we arrive at my first piece of advice for any application: be courageous and solicit feedback from other developers. Doing peer reviews has never been easier! You can get advice from people all around the world who are genuinely interested in helping, and will go the extra mile to give thoughtful and relevant feedback.</p>
+<p>Here is the mailing list thread to see the conversation that formed the final version. It is full of great advice!<br />
+<a title="group thread" href="https://groups.google.com/forum/?fromgroups#!topic/angular/kNH-gB0vKqQ" target="_blank">https://groups.google.com/forum/?fromgroups#!topic/angular/kNH-gB0vKqQ</a></p>
+<h2>Lesson 2: Don't let controllers own the domain model</h2>
+<p>In the application I have a service called <strong>notesService</strong> that is responsible for maintaining the data for the application.</p>
+<p>I originally had this functionality in the <strong>NotebookCtrl,</strong> but realized that this simply was not scalable.</p>
+<p>It is considered bad form for two controllers to share information via $scope inheritance.</p>
+<p>So how do you share data between controllers?<br />
+And how do you implement cross-controller communication?</p>
+<p>To share data between controllers, the solution is [ironically] very simple. Extract the data models that need to be shared across the application into a service and then inject that service into the controllers that need it.</p>
+<p>[js]<br />
+angular.module('myApp', [])<br />
+    .service('notesService', function () {<br />
+        return {<br />
+            notes:function () {<br />
+            },<br />
+            addNote:function (noteTitle) {<br />
+            },<br />
+            deleteNote:function (id) {<br />
+            }<br />
+        };<br />
+    })<br />
+    .controller('NotebookCtrl', ['$scope', 'notesService', function ($scope, notesService) {<br />
+        $scope.getNotes = function () {<br />
+            return notesService.notes();<br />
+        };</p>
+<pre><code>    $scope.addNote = function (noteTitle) {
+        if (noteTitle != '') {
+            notesService.addNote(noteTitle);
+        }
+    };
+
+    $scope.deleteNote = function (id) {
+        notesService.deleteNote(id);
+    };
+
+    $scope.resetForm = function () {
+        $scope.noteTitle = '';
+    };
+    }]);
+</code></pre>
+<p>[/js]</p>
+<p>If an event happens that needs to modify the data, the controller delegates that responsibility to the service.</p>
+<p>There are a few benefits to this approach:</p>
+<ol>
+<li>It creates a single source of truth</li>
+<li>It keeps your controllers small and lightweight</li>
+<li>You can easily hook the service into a real backend</li>
+</ol>
+<p>Let me press pause here for a second. Cross-controller communication is a fairly advanced topic and a person could write an entire blog post just on this subject. This is just one small facet of the problem.</p>
+<h2>Lesson 3: Define an API for your service</h2>
+<p>Even though JavaScript is not a classical language like Java, it is still important to strive for encapsulation in your design. The idea is to only expose the parts that you need to be available, and nothing more.</p>
+<p>Encapsulation is achieved via the module pattern. We use the <strong>noteService</strong> constructor function  to define a module that manages the <strong>data</strong> variable. This <strong>data</strong> var is accessed [via closure access] by the API that the constructor function returns.</p>
+<p>Witness the following code:</p>
+<p>[js]<br />
+.service('notesService', function () {<br />
+    var data = [<br />
+        // This is private<br />
+    ];</p>
+<pre><code>return {
+    notes:function () {
+        // This exposed private data
+        return data;
+    },
+    addNote:function (noteTitle) {
+        // This is a public function that modifies private data
+    },
+    deleteNote:function (id) {
+        // This is a public function that modifies private data
+    }
+};
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>There are three functions that are available in the service, and nothing more. The underlying data is even being protected and can only be accessed through a public function.</p>
+<h2>Lesson 4: DOM wrangling belongs in the link function of a directive</h2>
+<p>DOM manipulation and responding to DOM events are tricky and, left unchecked, will render your application a total mess in no time. One of my favorite things about AngularJS is that they have thoughtfully provided a place to put all of this particular code: directive(s).</p>
+<p>Notice the <strong>myNote</strong> directive:</p>
+<p>[js]<br />
+.directive('myNote', function () {<br />
+    return {<br />
+        link:function (scope, element, attrs) {</p>
+<pre><code>        var $el = $(element);
+
+        $el.hide().fadeIn('slow');
+
+        $('.thumbnails').sortable({
+            placeholder:"ui-state-highlight", forcePlaceholderSize:true
+        });
+    }
+};
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>By using the directives to directly manipulate DOM elements and Controllers to define databinding models, the controllers should know nothing about the DOM/views.  One of the great advantages of this approach is that it makes it much easier to test controllers. It is so much nicer to run tests on controllers without having to construct or prepare the HTML DOM (visual elements that comprise the 'view').</p>
+<h2>Lesson 5: Embrace the functional nature of JavaScript</h2>
+<p>JavaScript is a dynamic, functional language and, in my opinion, is where all the magic is.</p>
+<p>Examine the code below:</p>
+<p>[js]<br />
+angular.module('myApp', [])<br />
+    .service('notesService', function () {<br />
+        // Service functionality goes here<br />
+    })<br />
+    .directive('myNotebook', function ($log) {<br />
+        // Directive functionality goes here<br />
+    })<br />
+    .directive('myNote', function () {<br />
+        // Directive functionality goes here<br />
+    })<br />
+    .controller('NotebookCtrl', ['$scope', 'notesService', function ($scope, notesService) {<br />
+        // Controller functionality goes here<br />
+    }]);<br />
+[/js]</p>
+<p>In this snippet, I have defined my module, a service, two directives, and a controller in a way that builds on top of the previous definition. By daisy chaining my declarations it is easy to maintain what actually is attached to the underlying module. If you really wanted to get wild, you could even add new functionality to the module at runtime, and because JavaScript is dynamic, it would totally work.</p>
+<p><em>Special note: because you have the power to add functionality at runtime in such a powerful way, it is important to be extra disciplined about writing tests.</em></p>
+<h2>Conclusion</h2>
+<p>I have just scratched the surface of the AngularJS Sticky Notes application. I wanted to cover the broad strokes first since I believe they apply to any AngularJS application. Stay tuned for the next parts of this series as I start to dig deeper into each of the features one by one.</p>
+<p>I owe a special thanks to <a href="http://www.gridlinked.info/" title="Thomas Burleson" target="_blank">Thomas Burleson</a>, Igor Minar, Misko Hevery and everyone on the mailing list for all of their awesome input. The community is my favorite feature of the framework!</p>
+<p>AngularJS Mailing List<br />
+<a title="https://groups.google.com/forum/?fromgroups#!forum/angular" href="https://groups.google.com/forum/?fromgroups#!forum/angular" target="_blank">https://groups.google.com/forum/?fromgroups#!forum/angular</a></p>

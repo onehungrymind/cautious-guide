@@ -1,0 +1,227 @@
+---
+layout: post
+title: Winning with HTTP Interceptors in AngularJS
+date: 2015-01-24 02:46:54.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+tags: []
+meta:
+  _edit_last: '1'
+  _thumbnail_id: '1011'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+  _yoast_wpseo_content_score: '60'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>Super Bowl XLIX is just around the corner. And in my case, Super Bowl XLIX is literally just around the corner. I happen to live just a few miles from the stadium and you cannot help but get caught up into the hysteria that surrounds such an epic sporting event. Coincidentally, I recently had to create an HTTP interceptor to attach a session token to my HTTP headers so a football themed post is the natural thing to do. Right? RIGHT!</p>
+<p><img src="{{ site.baseurl }}/img/10410713_10153098234154015_9069795704037713185_n.jpg" alt="Super Bowl 2015" width="475" height="315" class="alignnone size-full wp-image-1012" /></p>
+<p>&lt;</p>
+<p>p style="text-align: center"><em>Awesome Photo by Matthew Wheeler</em></p>
+<p>This is an extension of the <a href="http://onehungrymind.com/build-a-simple-rest-application-with-angularjs-pt-2-master-detail-interface/" title="Build a Simple REST Application with AngularJS Pt 2 Master Detail Interface" target="_blank">Build a Simple REST Application with AngularJS Pt 2 Master Detail Interface</a> post with an authentication component built in. We are going to focus primarily on the pieces that pertain to user authentication and skip the basic AngularJS parts. The demo application has two parts; the website and the API and so make sure to download both and let the games begin! #groan</p>
+<blockquote><p>WARNING: Bad sport jokes will abound.</p></blockquote>
+<p>[button link="https://github.com/simpulton/simple-rest-website" size="large" window="yes"]The Website[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]The API[/button]</p>
+<h2>TL;DR Version</h2>
+<p>HTTP interceptors are a great way to define behavior in a single place for how a request or response is handled for ALL calls using the $http service. This is a game changer when you want to set an auth token on all outgoing calls or respond to a particular HTTP status error at the system level. You can pair interceptors with the incredibly useful <a href="https://github.com/auth0/angular-storage" title="Angular Storage" target="_blank">Angular Storage</a> module to cache an authenticated user and retrieve it the next run time.</p>
+<h2>The Resources</h2>
+<p>We are going to be introducing routes into our application with a route for the existing dashboard and another route for logging in, so we need to add in the library for <a href="https://github.com/angular-ui/ui-router" title="AngularUI Router" target="_blank">AngularUI Router</a>. We are also going to store the user information using <a href="https://github.com/auth0/angular-storage" title="Angular Storage" target="_blank">Angular Storage</a>. We will first add the JavaScript resources to our <strong>index.html</strong> file as seen below.</p>
+<p>{% highlight html %}<br />
+<script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.13/angular-ui-router.min.js"></script><br />
+<script src="//cdn.rawgit.com/auth0/angular-storage/master/dist/angular-storage.js"></script><br />
+{% endhighlight %}</p>
+<p>And then we will inject the <strong>angular-storage</strong> and <strong>ui.router</strong> submodules into our application.</p>
+<p>[js]<br />
+angular.module('SimpleRESTWebsite', ['angular-storage', 'ui.router'])<br />
+[/js]</p>
+<p>We are now ready for kick off! #sigh</p>
+<h2>Angular Storage</h2>
+<p>The first technique that I want to discuss is the use of the <strong>store</strong> service to keep track of our user. The <strong>store</strong> service uses local storage if it is available and <strong>ngCookies</strong> if it is not. It allows us to store JavaScript objects and maintain type which is really nice. Using <strong>store</strong> is really simple as it primarily consists of a getter and a setter that allow us to store a value with a key and then retrieve that value.</p>
+<p>In the <strong>UserService</strong> below, when a <strong>user</strong> is set, we are calling <strong>store.get</strong> and storing a reference to the user object. When <strong>service.getCurrentUser</strong> is called and <strong>currentUser</strong> does not exist, we are calling <strong>store.get</strong> to get the latest <strong>currentUser</strong> value. We will see how this comes in really handy in just a moment.</p>
+<p>[js]<br />
+.service('UserService', function(store) {<br />
+    var service = this,<br />
+        currentUser = null;<br />
+    service.setCurrentUser = function(user) {<br />
+        currentUser = user;<br />
+        store.set('user', user);<br />
+        return currentUser;<br />
+    };<br />
+    service.getCurrentUser = function() {<br />
+        if (!currentUser) {<br />
+            currentUser = store.get('user');<br />
+        }<br />
+        return currentUser;<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>And that is pretty much all there is to leveraging the <strong>store</strong> service. Getters and setters are pretty much the simplest play in the book.</p>
+<h2>The Interceptor</h2>
+<p>The next technique that I want to discuss is creating an interceptor that will modify all requests made with the <strong>$http</strong> service as well as intercept any response errors. We want to modify the outgoing requests so that we can add an authorization token to the header of our call. Doing it in the intercepter allows us to do it one place and not have to worry about setting it at the individual service level. If the session token has expired and we receive a 401 error from the server we also want to broadcast that status so we can redirect the user to log back in again.</p>
+<p>We are going to create a service called <strong>APIInterceptor</strong> that has our two interceptors; we will define them as <strong>service.request</strong> and <strong>service.responseError</strong>. We are also going to inject $rootScope and UserService for use in our interceptors.</p>
+<p>[js]<br />
+.service('APIInterceptor', function($rootScope, UserService) {<br />
+  var service = this;<br />
+  service.request = function(config) {<br />
+    return config;<br />
+  };<br />
+  service.responseError = function(response) {<br />
+    return response;<br />
+  };<br />
+})<br />
+[/js]</p>
+<p>In our request interceptor, we are going to call <strong>UserService.getCurrentUser</strong> to get the current user and, if one exists, we will grab the session token and assign it to a variable. The request interceptor takes a single argument which is an HTTP config object that we will use to assign the value of <strong>access_token</strong> to an <strong>authorization</strong> property on the <strong>config.headers</strong> object. Now that we have made the appropriate modification to the <strong>config</strong> object, we can return it for actual processing from the <strong>$http</strong> service.</p>
+<p>[js]<br />
+.service('APIInterceptor', function($rootScope, UserService) {<br />
+    var service = this;<br />
+    service.request = function(config) {<br />
+        var currentUser = UserService.getCurrentUser(),<br />
+            access_token = currentUser ? currentUser.access_token : null;<br />
+        if (access_token) {<br />
+            config.headers.authorization = access_token;<br />
+        }<br />
+        return config;<br />
+    };<br />
+    service.responseError = function(response) {<br />
+        return response;<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>When our session token expires or the user is not authenticated, the server will respond with a 401 error that we want to intercept so we can have the user log back into the application. We listen for this error in our <strong>service.responseError</strong> interceptor by checking the <strong>response.status</strong> code. If the <strong>response.status</strong> code is <strong>401</strong> then we will broadcast an <strong>unauthorized</strong> event on <strong>$rootScope</strong>. The last thing we want is for a user to be caught offside in our application. #totallyJustMadeThatJoke!</p>
+<p>[js]<br />
+.service('APIInterceptor', function($rootScope, UserService) {<br />
+    var service = this;<br />
+    service.request = function(config) {<br />
+        var currentUser = UserService.getCurrentUser(),<br />
+            access_token = currentUser ? currentUser.access_token : null;<br />
+        if (access_token) {<br />
+            config.headers.authorization = access_token;<br />
+        }<br />
+        return config;<br />
+    };<br />
+    service.responseError = function(response) {<br />
+        if (response.status === 401) {<br />
+            $rootScope.$broadcast('unauthorized');<br />
+        }<br />
+        return response;<br />
+    };<br />
+})<br />
+[/js]</p>
+<p>Now that we have defined our interceptor, we need to actually apply it to our application. Interceptors are added by pushing them into the <strong>$httpProvider.interceptors</strong> array as we have done at the bottom of our <strong>config</strong> block.</p>
+<p>[js]<br />
+.config(function($stateProvider, $urlRouterProvider, $httpProvider) {<br />
+    $stateProvider<br />
+        .state('login', {<br />
+            url: '/login',<br />
+            templateUrl: 'app/templates/login.tmpl.html',<br />
+            controller: 'LoginCtrl',<br />
+            controllerAs: 'login'<br />
+        })<br />
+        .state('dashboard', {<br />
+            url: '/dashboard',<br />
+            templateUrl: 'app/templates/dashboard.tmpl.html',<br />
+            controller: 'DashboardCtrl',<br />
+            controllerAs: 'dashboard'<br />
+        });<br />
+    $urlRouterProvider.otherwise('/dashboard');<br />
+    $httpProvider.interceptors.push('APIInterceptor');<br />
+})<br />
+[/js]</p>
+<h2>Authentication</h2>
+<p>Now that we have covered storing the user data and intercepting our service calls, I want to highlight the pertinent pieces in the sample application.</p>
+<p><img src="{{ site.baseurl }}/img/login.png" alt="Login Screen" width="527" height="280" class="alignnone size-full wp-image-1013" /></p>
+<p>When <strong>signIn</strong> is called in our <strong>LoginCtrl</strong>, the <strong>user</strong> object is passed into a <strong>LoginService.login</strong> call which is resolved via a promise. When that promise is resolved, a few important steps are happening that warrant commentary.</p>
+<ul>
+<li>We are taking the value of <strong>response.data.id</strong>, which in this case happens to be our session token, and assigning it to <strong>user.access_token</strong>. We are then calling <strong>UserService.setCurrentUser</strong> with our modified <strong>user</strong> object; this will ultimately use the <strong>store</strong> service to store a local, persistent reference.</li>
+<li>We are also using <strong>$rootScope.$broadcast</strong> to send an <strong>authorized</strong> event that we will listen for in our top-level <strong>MainCtrl</strong>.</li>
+<li>We are using the <strong>$state</strong> service to redirect the user to the <strong>dashboard</strong> view by calling <strong>$state.go('dashboard')</strong></li>
+</ul>
+<p>[js]<br />
+.controller('LoginCtrl', function($rootScope, $state, LoginService, UserService){<br />
+    var login = this;<br />
+    function signIn(user) {<br />
+        LoginService.login(user)<br />
+            .then(function(response) {<br />
+                user.access_token = response.data.id;<br />
+                UserService.setCurrentUser(user);<br />
+                $rootScope.$broadcast('authorized');<br />
+                $state.go('dashboard');<br />
+            });<br />
+    }<br />
+    function register(user) {<br />
+        LoginService.register(user)<br />
+            .then(function(response) {<br />
+                login(user);<br />
+            });<br />
+    }<br />
+    function submit(user) {<br />
+        login.newUser ? register(user) : signIn(user);<br />
+    }<br />
+    login.newUser = false;<br />
+    login.submit = submit;<br />
+})<br />
+[/js]</p>
+<p>In our <strong>MainCtrl</strong>, we are listening for the <strong>authorized</strong> and <strong>unauthorized</strong> events. When a user logs in and an <strong>authorized</strong> event is fired, we respond to that event by updating <strong>main.currentUser</strong> so we can show the logout button in the nav bar. When the <strong>unauthorized</strong> event is fired, we null out the current user and redirect the application back to the login screen. This is useful if a user navigates directly to an internal state of the application and they do not have a valid session token as the error is caught and the user is prompted to authenticate.</p>
+<p>[js]<br />
+.controller('MainCtrl', function ($rootScope, $state, LoginService, UserService) {<br />
+    var main = this;<br />
+    function logout() {<br />
+        LoginService.logout()<br />
+            .then(function(response) {<br />
+                main.currentUser = UserService.setCurrentUser(null);<br />
+                $state.go('login');<br />
+            }, function(error) {<br />
+                console.log(error);<br />
+            });<br />
+    }<br />
+    $rootScope.$on('authorized', function() {<br />
+        main.currentUser = UserService.getCurrentUser();<br />
+    });<br />
+    $rootScope.$on('unauthorized', function() {<br />
+        main.currentUser = UserService.setCurrentUser(null);<br />
+        $state.go('login');<br />
+    });<br />
+    main.logout = logout;<br />
+    main.currentUser = UserService.getCurrentUser();<br />
+})<br />
+[/js]</p>
+<p>And finally, in our nav bar at the top of the application, we are displaying a logout button and showing it only if there is a current user.</p>
+<p>{% highlight html %}<br />
+<body ng-controller="MainCtrl as main" ng-cloak></p>
+<nav class="navbar navbar-default">
+        <button ng-if="main.currentUser" class="btn btn-default navbar-btn" ng-click="main.logout()">Logout <strong>{{main.currentUser.email}}</strong></button><br />
+    </nav>
+<div class="container-fluid">
+<div class="row">
+<div ui-view></div>
+</p></div>
+</p></div>
+<p></body><br />
+{% endhighlight %}</p>
+<h2>Review</h2>
+<p>This was a really fun project for me to dig into, and I owe a huge debt of gratitude to <a href="https://twitter.com/mgonto" title="Martin Gonto" target="_blank">Martin Gonto</a> for his input and excellent work on the Angular Storage module.</p>
+<p>Let's take a quick moment for a play-by-play recap of what we learned in this lesson.</p>
+<ul>
+<li>Angular Storage is a great way to store local, persistent data. It exposes the <strong>store</strong> service with a simple getter-setter interface.</li>
+<li>We can intercept HTTP calls by creating a service that has <strong>request</strong>, <strong>requestError</strong>, <strong>response</strong>, or <strong>responseError</strong> interceptor methods defined on it.</li>
+<li>We activate an interceptor service by pushing that service into the <strong>$httpProvider.interceptors</strong> array in the <strong>config</strong> block of our application.</li>
+<li>A session token can be added for all outgoing HTTP requests by adding it to the <strong>config.headers</strong> object in a <strong>request</strong> interceptor.</li>
+<li>We can intercept HTTP response errors and handle specific errors by checking the <strong>response.status</strong> code.</li>
+<li>$rootScope has limited utility when it comes to direct interaction, but it works well as an event bus as seen in the case of keeping our <strong>MainCtrl</strong> synchronized.</li>
+</ul>
+<h2>Resources</h2>
+<p><a href="https://github.com/auth0/angular-storage" title="Angular Storage" target="_blank">Angular Storage</a></p>
+<p><a href="https://github.com/angular-ui/ui-router" title="AngularUI Router" target="_blank">AngularUI Router</a></p>
+<p><a href="https://docs.angularjs.org/api/ng/service/$http" title="$http Documenation" target="_blank">$http Documentation</a></p>
+<p>[button link="https://github.com/simpulton/simple-rest-website" size="large" window="yes"]The Website[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]The API[/button]</p>

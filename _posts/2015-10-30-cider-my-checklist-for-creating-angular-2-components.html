@@ -1,0 +1,140 @@
+---
+layout: post
+title: 'CIDER: My Checklist for Creating Angular 2 Components'
+date: 2015-10-30 23:20:07.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Angular 2
+- JavaScript
+- Programming
+- Tips and Tricks
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '8'
+  _thumbnail_id: '1087'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>Intro</h2>
+<p>Angular 2 is a significant departure from Angular 1.X in terms of style and syntax. I have to admit that it felt like the first day of school the first time I sat down to try my hand at Angular 2.</p>
+<p>Eventually, I began to notice a pattern emerge when creating Angular components that made things easier once I was able to articulate it. I created a simple mnemonic device to help me remember what steps to take when creating an Angular component; the word is <strong>CIDER</strong>.</p>
+<h2>CIDER</h2>
+<ul>
+<li><strong>C</strong>reate your class</li>
+<li><strong>I</strong>mport your dependencies</li>
+<li><strong>D</strong>ecorate your class</li>
+<li><strong>E</strong>nhance with composition</li>
+<li><strong>R</strong>epeat for sub-components</li>
+</ul>
+<p>Let me show you how this works with a code example from the <a href="https://angular.io/docs/ts/latest/tutorial/" target="_blank">Tour of Heroes Tutorial</a>.</p>
+<h2>Create Your Class</h2>
+<p>The first thing we are going to do is create is our <strong>AppComponent</strong> class.</p>
+<p>[js]<br />
+class AppComponent {<br />
+  public title = 'Tour of Heroes';<br />
+}<br />
+[/js]</p>
+<h2>Import Your Dependencies</h2>
+<p>The next thing we are going to do is import our dependencies. The only dependency we have for <strong>AppComponent</strong> for now is just <strong>Component</strong>.</p>
+<p>[js]<br />
+import {Component} from 'angular2/angular2';</p>
+<p>class AppComponent {<br />
+  public title = 'Tour of Heroes';<br />
+}<br />
+[/js]</p>
+<h2>Decorate Your Class</h2>
+<p>Now that we have imported our basic Angular dependencies, it is time to decorate our class to do Angular things. We are going to tell Angular to take our <strong>AppComponent</strong> class and bind it to the <strong>my-app</strong> element with the <strong>my-template.html</strong> file.</p>
+<p>[js]<br />
+import {Component} from 'angular2/angular2';<br />
+class Hero {<br />
+  id: number;<br />
+  name: string;<br />
+}<br />
+@Component({<br />
+  selector: 'my-app',<br />
+  templateUrl:'my-template.html'<br />
+})<br />
+class AppComponent {<br />
+  public title = 'Tour of Heroes';<br />
+  public hero: Hero = {<br />
+    id: 1,<br />
+    name: 'Windstorm'<br />
+  };<br />
+}<br />
+[/js]</p>
+<p>In this example, I am using <strong>templateUrl</strong> because of formatting issues but you can also use the <strong>template</strong> property with string literals as illustrated in the tutorial.</p>
+<p>{% highlight html %}</p>
+<h1>{{title}}</h1>
+<h2>{{hero.name}} details!</h2>
+<div><label>id: </label>{{hero.id}}</div>
+<div><label>name: </label>{{hero.name}}</div>
+<p>{% endhighlight %}</p>
+<h2>Enhance with Composition</h2>
+<p>Now that we have laid the foundation, it is time to enhance our component. We are going to take our current template and add in an input element which you can see below.</p>
+<p>{% highlight html %}</p>
+<h1>{{title}}</h1>
+<h2>{{hero.name}} details!</h2>
+<div><label>id: </label>{{hero.id}}</div>
+<div>
+  <label>name: </label></p>
+<div><input [(ng-model)]="hero.name" placeholder="name"></div>
+</div>
+<p>{% endhighlight %}</p>
+<p>We are going to import <strong>FORM_DIRECTIVES</strong> so that we can have access to <strong>ng-model</strong> in our template. This next step is <strong>very</strong> important: we add <strong>FORM_DIRECTIVES</strong> to the <strong>directives</strong> arrays.</p>
+<p>[js]<br />
+import {Component, FORM_DIRECTIVES} from 'angular2/angular2';<br />
+class Hero {<br />
+  id: number;<br />
+  name: string;<br />
+}<br />
+@Component({<br />
+  selector: 'my-app',<br />
+  templateUrl:'my-template.html',<br />
+  directives: [FORM_DIRECTIVES]<br />
+})<br />
+class AppComponent {<br />
+  public title = 'Tour of Heroes';<br />
+  public hero: Hero = {<br />
+    id: 1,<br />
+    name: 'Windstorm'<br />
+  };<br />
+}<br />
+[/js]</p>
+<h2>Repeat for Sub-Components</h2>
+<p>We have just enhanced our component to handle form input, but obviously we would not stop there in real-life. As our application grows in complexity, we are going to want to abstract those units of complexity into sub-components. This is where the CIDER process starts again. For instance, you may have a form that has some complex validation that you want to isolate from the main component. You would start CIDER by first declaring a new class to encapsulate your form functionality, import your dependencies, and so on.</p>
+<h2>EXTRA: Bootstrap the Main Component</h2>
+<p>Since this is the main component, we are going to need to do one extra step to get our application running and that is to bootstrap it. We will first import the <strong>bootstrap</strong> dependency and then at the bottom of our class we kick things off by calling <strong>bootstrap(AppComponent)</strong>. You only need to do this once for your application and not for every single component.</p>
+<p>[js]<br />
+import {bootstrap, Component, FORM_DIRECTIVES} from 'angular2/angular2';<br />
+class Hero {<br />
+  id: number;<br />
+  name: string;<br />
+}<br />
+@Component({<br />
+  selector: 'my-app',<br />
+  templateUrl:'my-template.html',<br />
+  directives: [FORM_DIRECTIVES]<br />
+})<br />
+class AppComponent {<br />
+  public title = 'Tour of Heroes';<br />
+  public hero: Hero = {<br />
+    id: 1,<br />
+    name: 'Windstorm'<br />
+  };<br />
+}<br />
+bootstrap(AppComponent);<br />
+[/js]</p>
+<h2>Outro</h2>
+<p>Hopefully, this little trick that I use makes it easier for you to make the jump from Angular 1.X to Angular 2. Check out the resources below for a great place to start applying this technique. Let me know what you think in the comments!</p>
+<p><a href="https://angular.io/docs/ts/latest/tutorial/" target="_blank">Tour of Heroes Tutorial</a></p>
+<p><a href="https://egghead.io/series/angular-2-fundamentals" target="_blank">Egghead.io - Angular 2 Fundamentals</a></p>
+<p><a href="https://github.com/AngularClass/angular2-webpack-starter" target="_blank">Angular Class - Angular 2 Starter</a></p>

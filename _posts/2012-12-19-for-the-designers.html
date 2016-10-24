@@ -1,0 +1,243 @@
+---
+layout: post
+title: AngularJS And Something For The Designers In My Life
+date: 2012-12-19 07:44:27.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- jQuery
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>This post is for all the designers in my life. I love AngularJS because as a developer it just makes sense but I am certain it is an entirely confusing and brave new world for some people.</p>
+<h2>The Backstory</h2>
+<p>This post was inspired by a series of conversations that I have had with one of my best buds, Shane Mielke, over a project that I am helping him out on. So before we go any further, I encourage you to check out his protfolio at <a href="http://www.shanemielke.com/work.php" title="Shane Mielke's Portfolio" target="_blank">http://www.shanemielke.com/work.php</a> and you will see that he has some serious chops. He is rock solid when it comes to jQuery but it gets totally fuzzy when it comes to writing that same code in AngularJS.</p>
+<p>I have a TON of friends who fall into this category. Awesome designer? Check! jQuery skills? Check! AngularJS? Uhhhhhh.... what?</p>
+<p>So! I am going to show you a very gentle way to take something you would write in jQuery and convert it into something that doesn't explode the AngularJS universe.</p>
+<h2>jQuery Events</h2>
+<p>For starters, it is important to mention the relationship that AngularJS has with jQuery. AngularJS comes with a subset of jQuery right out of the box. If you have included jQuery in your document then AngularJS will defer to that version of jQuery. This kind of cooperation right out of the gates is really handy.</p>
+<p>I am going to give you the condensed version immediately so that if the light goes on and you cannot wait to go write code, you are not obligated to finish. I love designers as much as AngularJS does. Believe dat!</p>
+<blockquote><p>
+<strong>The simplest way to convert jQuery code into AngularJS is to create a directive and put that code in the link function of that directive. </strong>
+</p></blockquote>
+<p>This does not solve any architecture problems per se and there are some ways to optimize your directives but! this is going to get you started and the side effect is that you will have portable code. Watch this magic trick!</p>
+<p>Let us take the <strong>click</strong> example from the jQuery docs via <a href="http://api.jquery.com/click/" target="_blank">http://api.jquery.com/click/</a> and convert it into AngularJS.</p>
+<p>{% highlight html %}</p>
+<p>First Paragraph</p>
+<p>Second Paragraph</p>
+<p>Yet one more Paragraph</p>
+<p><script><br />
+    $("p").click(function () {<br />
+      $(this).slideUp();<br />
+    });<br />
+</script></p>
+<p>{% endhighlight %}</p>
+<p>So we have all seen some variation of this theme a gazillion times. Target some HTML element and add an event handler to it that does something. The stage has been set.</p>
+<p>So first things first, we bootstrap the AngularJS application with <strong>ng-app</strong> and the module name we want to load.</p>
+<p>{% highlight html %}<br />
+<html ng-app="myModule"><br />
+{% endhighlight %}</p>
+<p>And then we hint at something amazing.</p>
+<p>[js]<br />
+var myModule = angular.module('myModule', []);</p>
+<p>myModule.directive('slideUp', function () {<br />
+    var linker = function (scope, element, attrs) {<br />
+        // WAIT FOR IT!<br />
+    };</p>
+<pre><code>return {
+    restrict:'A',
+    link:linker
+}
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>So I have created a directive called <strong>slideUp</strong> and we are going to put some DOM manipulation code in place to fulfill its destiny. You may want to sit down for this.</p>
+<p>[js]<br />
+myModule.directive('slideUp', function () {<br />
+    var linker = function (scope, element, attrs) {<br />
+        element.on('click', function () {<br />
+            $(this).slideUp();<br />
+        });<br />
+    };</p>
+<pre><code>return {
+    restrict:'A',
+    link:linker
+}
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>What the!? That looks almost like the jQuery code. True story bro! The difference is that the parameter <strong>element</strong> is already a jQuery object so we don't have to query it via <strong>$( )</strong>.</p>
+<p>That is all nice and wonderful but how do we use it?</p>
+<p>{% highlight html %}</p>
+<p slide-up>Second Paragraph</p>
+<p slide-up>Yet one more Paragraph</p>
+<p>{% endhighlight %}</p>
+<blockquote><p>
+<strong>Special Note: AngularJS converts camel case directive names into snake case and so slideUp becomes slide-up.</strong>
+</p></blockquote>
+<p>So that was easy! But here is the really cool part. You can now use that directive to 'decorate' other elements.</p>
+<p>{% highlight html %}</p>
+<p slide-up>Second Paragraph</p>
+<p slide-up>Yet one more Paragraph</p>
+<div class="box" slide-up></div>
+<p>{% endhighlight %}</p>
+<p>With no modification, I simply added <strong>slide-up</strong> to my <strong>div</strong> tag and it worked exactly the same. This is what I mean by 'portable'.</p>
+<h2>A Few Variations</h2>
+<p>I am going to show you a few quick variations to get the wheels turning. I am only going to explain the interesting parts of each example and not belabor the redundant bits.</p>
+<p>The next series of examples are going to be built around jQuery <strong>click</strong> event and the <strong>animate </strong> function. The premise is fairly simple. I want to animate an element in some direction when I click it.</p>
+<p>For reference purposes you can see the full code here:<br />
+<a href="https://github.com/simpulton/angular-designers" title="Angular Designers Github Repo" target="_blank">https://github.com/simpulton/angular-designers</a></p>
+<p>Let us create a directive called <strong>animateRight</strong>.</p>
+<p>[js]<br />
+myModule.directive('animateRight', function () {<br />
+    var linker = function (scope, element, attrs) {<br />
+        // So far so good.<br />
+    };</p>
+<pre><code>return {
+    restrict:'A',
+    link:linker
+}
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>Lets add in the <strong>click</strong> handler.</p>
+<p>[js]<br />
+myModule.directive('animateRight', function () {<br />
+    var linker = function (scope, element, attrs) {<br />
+        var right = function() {<br />
+            // Well THAT was easy<br />
+        }</p>
+<pre><code>    element.on('click', right);
+};
+
+...
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>And the <strong>animate</strong> part.</p>
+<p>[js]<br />
+myModule.directive('animateRight', function () {<br />
+    var linker = function (scope, element, attrs) {<br />
+        var right = function() {<br />
+            // We move it right by increasing the distance on the left - go figure<br />
+            $(this).animate({<br />
+                left: '+=150'<br />
+            })<br />
+        }</p>
+<pre><code>    element.on('click', right);
+};
+
+...
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>And this is how we decorate the DOM.</p>
+<p>{% highlight html %}</p>
+<div animate-right class="box"></div>
+<p>{% endhighlight %}</p>
+<p>And for fun let us create a variation that moves the element down.</p>
+<p>[js]<br />
+myModule.directive('animateDown', function () {<br />
+    var linker = function (scope, element, attrs) {<br />
+        var down = function() {<br />
+            $(this).animate({<br />
+                top: '+=150'<br />
+            })<br />
+        }</p>
+<pre><code>    element.on('click', down);
+};
+
+...
+</code></pre>
+<p>})<br />
+[/js]</p>
+<blockquote><p>
+<strong>So you may have noticed this bit of code that says <strong>restrict:'A'</strong> and wondered what in the world that is for. That essentially tells the directive that it can only be used as an <strong>attribute</strong>. You can also use <strong>E</strong> for <strong>element</strong> and <strong>C</strong> for <strong>class</strong>.</strong>
+</p></blockquote>
+<p>And since I brought it up, let me show you how a class directive works.</p>
+<p>[js]<br />
+myModule.directive('animateRightClass', function(){<br />
+    ...</p>
+<pre><code>return {
+    restrict:'C',
+    link: linker
+}
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>Change <strong>A</strong> to <strong>C</strong> and give it a new name for fun and drop it in your HTML. Bam!</p>
+<p>{% highlight html %}</p>
+<div class="box animate-right-class"></div>
+<p>{% endhighlight %}</p>
+<p>And one more example for the road! You may have noticed the <strong>scope</strong> and <strong>attrs</strong> function being passed in to the <strong>link</strong> function. Do they actually do something? Well yes they do! Let us create a directive of the more dynamic variety.</p>
+<p>{% highlight html %}</p>
+<div animate="right" class="box"></div>
+<div animate="down" class="box"></div>
+<p>{% endhighlight %}</p>
+<p>We are now passing in the direction that we want the element to animate.</p>
+<p>Let us create the <strong>animate</strong> directive.</p>
+<p>[js]<br />
+myModule.directive('animate', function(){<br />
+    var linker = function(scope,element,attrs) {<br />
+        // BY NOW THIS HAS GOT TO BE BOOOOOORING!<br />
+    };</p>
+<pre><code>return {
+    restrict:'A',
+    link: linker
+}
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p><strong>Scope</strong> is the current scope of the directive and <strong>attrs</strong> is an array of all the attributes on the element the directive lives on. So in the example above the way to get the value of what direction you want the directive to animate you simply refer to it as <strong>attrs['animate']</strong>.</p>
+<p>We are also going to create some functions on scope that we can dynamically reference in the event handler.</p>
+<p>[js]<br />
+myModule.directive('animate', function(){<br />
+    var linker = function(scope,element,attrs) {<br />
+        scope.up = function() {<br />
+            // You know what to do here<br />
+        }</p>
+<pre><code>    scope.down = function() {
+        // You know what to do here
+    }
+
+    scope.left = function() {
+        // You know what to do here
+    }
+
+    scope.right = function() {
+        // You know what to do here
+    }
+
+    var direction = attrs['animate'];
+
+    element.on('click', scope[direction]);
+};
+
+...
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>My favorite part of all this is that we are playing to JavaScript's strength and doing some dynamic function referencing which is really cool!</p>
+<h2>Conclusion</h2>
+<p>I have walked you through a series of examples that shows how easy it is to pull your jQuery code into a directive and then 'decorate' your DOM with that functionality. The upside is that your code now becomes very portable and you can apply it to more than one element without having to go down the path of writing a query for every element you want to target.</p>
+<p>Another upside is that because of the way that AngularJS compiles directives you never have to worry about dynamic elements getting event handlers. This is because the element parameter is always a jQuery object to start out with.</p>
+<h2>Resources</h2>
+<p>The Code Example:<br />
+<a href="https://github.com/simpulton/angular-designers" title="Angular Designers Github Repo" target="_blank">https://github.com/simpulton/angular-designers</a></p>
+<p>Shane Mielke's Portfolio [He really is one of my favorite designers]:<br />
+<a href="http://www.shanemielke.com/work.php" title="Shane Mielke's Portfolio" target="_blank">http://www.shanemielke.com/work.php</a></p>
+<p>AngularJS Directive Guide [Which I still reference often]:<br />
+<a href="http://docs.angularjs.org/guide/directive" title="AngularJS Directive Guide" target="_blank">http://docs.angularjs.org/guide/directive</a></html></p>

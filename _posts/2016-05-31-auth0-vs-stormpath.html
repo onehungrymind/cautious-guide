@@ -1,0 +1,195 @@
+---
+layout: post
+title: 'Field Notes: Evaluating Auth0 vs. Stormpath'
+date: 2016-05-31 21:51:12.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _yoast_wpseo_primary_category: ''
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '1267'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>TL;DR</h2>
+<p>Auth0 is the best authentication option as a service provider. In terms of features, out of the box integrations and enterprise support, Auth0 manages to meet and exceed my expectations. It may not be the perfect solution but goes a long way to making the implementation of authorization and authentication a breeze.</p>
+<h2>Backstory</h2>
+<p>Recently, I started a new Angular course at a big company and one of the things they wanted to put emphasis on was authentication and authorization. This company has multiple applications across different platforms and they wanted to have a unified approach for authentication and authorization for all of their apps. This is a fairly common request and the problem has been solved many times but people just like to reinvent the wheel and end up with multiple identity silos.</p>
+<p>I had the privilege of meeting <a href="https://twitter.com/salatzar" target="_blank">Alex Salazar</a> at <a href="http://www.thestrangeloop.com/" target="_blank">Strange Loop</a> a few years ago and he was the first person who turned me onto the idea of handing off identity management to a service. I met <a href="https://twitter.com/mgonto" target="_blank">Martin Gonto</a> and <a href="https://twitter.com/woloski" target="_blank">Matias Wolowski</a> at a conference shortly thereafter and with Angular integration right out of the box, I had to give them a try. I actually wrote about my initial experiences <a href="http://onehungrymind.com/angularjs-auth0-go-speed-date/" target="_blank">here</a> and <a href="http://onehungrymind.com/angularjs-and-auth0-multiple-identity-providers/" target="_blank">here</a>.</p>
+<p>In light of this conversation, I decided to sit down and do a thorough comparison between Stormpath and Auth0.<br />
+After using and comparing them both for a week, I have created a sample project that has a working example for Auth0 and Stormpath. Give the code a spin and checkout my notes below.</p>
+<p>[button link="https://github.com/onehungrymind/Auth0vsStormpathCodeSamples" size="large" window="yes"]Code[/button]</p>
+<h2>Authentication APIs</h2>
+<p>Both companies promote JSON Web Tokens (JWT), but Auth0 appears to have deeper roots on a standard-based approach. Stormpath seemed to have started as a replacement for a  Users table - a simple API that gives you user, password, groups and so on. Auth0 supports OpenID Connect/OAuth2.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h2>Dashboard</h2>
+<p>Auth0 is a clear winner here. Their dashboard is simple, fast, clear and looks modern. Stormpath’s dashboard seems very outdated in comparison. The Stormpath dashboard seems like it’s just a table within a table, within another table. Now I’m not an expert designer or anything, but the experience feels really cumbersome and hard to navigate.</p>
+<p><strong>Winner</strong>: <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img class="inline-image" src="{{ site.baseurl }}/img/stormpath-dashboard-e1464217708832.jpg" alt="stormpath-dashboard" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img class="inline-image" src="{{ site.baseurl }}/img/auth0-dashboard.jpg" alt="auth0-dashboard" />
+  </div>
+</div>
+<h2>Linking Accounts</h2>
+<p>Auth0 has full support for linking multiple accounts under a single user (regardless if it’s user/password, social, SAML, etc.). Stormpath does not have the ability to link user accounts out-of-the-box, but it can be done in a limited fashion through an integration with OAuth.io.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-linking-1-e1464217805545.jpg" alt="stormpath-linking" class="inline-image" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-linking.jpg" alt="auth0-linking" class="inline-image" />
+  </div>
+</div>
+<h2>Active Directory/LDAP Integration</h2>
+<p>Auth0 wins again. Stormpath does AD synchronization but includes password hashes which for many companies is a no go. The Auth0 approach on the other hand is rather interesting. They open an outbound websocket connection and become an authenticated “https interface” of the AD/LDAP. This removes the need for synchronization, the users who login will be validated in real time with AD/LDAP, there is never stale data and as soon as you turn off the connector, access is shut down.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h4>Stormpath</h4>
+<p><img class="inline-image" src="{{ site.baseurl }}/img/stormpath-ad-ldap.jpg" alt="stormpath-ad-ldap" /></p>
+<h4>Auth0</h4>
+<p><img class="inline-image" src="{{ site.baseurl }}/img/auth0-ad-ldap.png" alt="auth0-ad-ldap" /></p>
+<h2>Docs</h2>
+<p>Both companies have lots of docs. Auth0’s docs feel overwhelming at times. Both companies offer excellent quickstarts and seed projects. While Auth0 offers more quickstarts and seed projects, Stormpath quickstarts and seed projects feel a bit more polished. I was able to quickly get started with both Auth0 and Stormpath Angular quickstart which helped sell me on the platforms right away.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/stormpath-logo.png" alt="Stormpath" /> Draw</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-docs-e1464192459197.jpg" alt="stormpath-docs" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-docs.jpg" alt="auth0-docs" />
+  </div>
+</div>
+<h2>Extensibility</h2>
+<p>The level of extensibility of the Auth0 platform is unmatched. I’m not talking about doing stuff with their API. You can literally write code on Auth0’s dashboard to alter the authentication/authorization logic, set up custom rules and much more. There are a handful of prebuilt recipes to help you understand how it works and get started. The custom rules work great, especially if you are working with existing systems and need to get data from them but also applies to any number of use cases including gathering analytics data and blocking logins based on arbitrary logic. Auth0 also provides Extensions, which are mini-apps and cron jobs that extend the functionality of the platform. There is no concept of extensibility in Stormpath, their strict focus is on authorization and authentication. Depending on your use case, you may only want one of these services to handle the authorization and authentication, but it does not hurt to have options.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h2>Migration from existing system</h2>
+<p>Both services provide the typical solution of importing user accounts using an API. Auth0 again goes a step further offering a unique feature: gradual migration.  As part of their extensibility story, you can define a Custom Database Connection to your existing database. This is done through the Auth0 dashboard and is essentially a NodeJS script that securely executes queries against your database. Every time a user successfully logs in, their user account is migrated from your existing database to Auth0. The process is completely transparent to the end-user but a great option for me as I don’t have to worry about forcing users to change passwords or coordinating a migration strategy. The migration takes care of itself over time.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-migration.png" alt="stormpath-migration" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-migration.png" alt="auth0-migration" />
+  </div>
+</div>
+<h2>User Metadata</h2>
+<p>Both services provide support for storing user metadata. I think Auth0 has an edge on the way it handles metadata. Stormpath has a 10mb limit on metadata, while Auth0 does not impose any sorts of limits from what I could find. Auth0 additionally allows querying your users based on metadata. For example I can run queries such as <code>user.app_metadata.foo:’bar’</code> or <code>user.app_metadata.signup_date:[20160501 TO 20160515]</code>.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-metadata.jpg" alt="stormpath-metadata" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img class="inline-image" src="{{ site.baseurl }}/img/auth0-metadata-1-e1464218925219.png" alt="auth0-metadata" />
+  </div>
+</div>
+<h2>Search</h2>
+<p>Stormpath provides search based on the typical properties like email, name, status, and so on using a SQL like match. Auth0 provides a Lucene syntax interface that allows you to search over the entire user profile, including the metadata. I’ve found the Auth0 approach to be much more powerful for the use cases I had.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h4>Stormpath</h4>
+<p><img class="inline-image" src="{{ site.baseurl }}/img/stormpath-search.jpg" alt="stormpath-search" /></p>
+<h4>Auth0</h4>
+<p><img class="inline-image" src="{{ site.baseurl }}/img/auth0-search-1.png" alt="auth0-search" /></p>
+<h2>Authorization</h2>
+<p>Stormpath has the notion of groups and organizations built-in on their API. Auth0 takes a different approach. Their recommendation is to either use rules to store authorization-related info on the metadata, use Rules, and/or use the Authorization Extension. This extension allows managing users and groups, nested groups and map groups from the identity providers. This isn’t currently supported by their API from what I can tell, so I have to give a slight edge to Stormpath on this one.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/stormpath-logo.png" alt="Stormpath" /> Stormpath</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-authorization-e1464201511911.jpg" alt="stormpath-authorization" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-authorization.png" alt="auth0-authorization" />
+  </div>
+</div>
+<h2>API Authentication for external users</h2>
+<p>Stormpath provide API key management. They manage the API keys for you. From the OAuth2 spec they seem to only support client credentials flow - the exchange of an API key for an access token. On the Auth0 side, I found documentation for client credentials and also authorization code flow. I could not find how to manage these via the dashboard. The doc provided explains how to do this via the API. Since this is still a beta feature for Auth0, I will have to give the edge to Stormpath as their solution works right now.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/stormpath-logo.png" alt="Stormpath" /> Stormpath</p>
+<h2>Social Login</h2>
+<p>Auth0 and Stormpath provide support for social logins. Auth0 supports many more providers though, over 30 total, but both provide support for the major ones like Facebook, Twitter and Google. Besides the 30 or so out of the box providers, Auth0 also allows custom social connections through their extensions framework. For this, I have to give the edge to Auth0.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-social.png" alt="stormpath-social" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-social-e1464218049137.png" alt="auth0-social" />
+  </div>
+</div>
+<h2>Multi Factor Authentication</h2>
+<p>Auth0 supports Google Authenticator and Duo out of the box. Stormpath does not provide a built-in integration as far as I can see. I did find a sample of how it can be achieved with Stormpath - but it was fairly unintuitive. I prefer the Auth0 way of being able to configure it from my dashboard.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h4>Stormpath</h4>
+<p><img class="inline-image" src="{{ site.baseurl }}/img/stormpath-multifactor.png" alt="stormpath-multifactor" /></p>
+<h4>Auth0</h4>
+<p><img class="inline-image" src="{{ site.baseurl }}/img/auth0-multifactor-1.png" alt="auth0-multifactor" /></p>
+<h2>Support</h2>
+<p>Both companies provide a fair amount of support given that I evaluated the software through a free trial. Both companies provide status pages to easily check the API uptime. Both companies also reached out to me a few days after signing up to see if there was anything I needed help. Small touches like that really showed that they do care about my experience. I would have liked quicker responses from Auth0 support engineers. Auth0 has its own community forum as well with tons of questions and answers. From my experience, I’d have to say that neither company is better at support, but they both provide more than adequate support.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/stormpath-logo.png" alt="Stormpath" /> Draw</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img class="inline-image" src="{{ site.baseurl }}/img/stormpath-support-2.png" alt="stormpath-support" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-support-1.png" alt="stormpath-support" width="952" />
+  </div>
+</div>
+<h2>Anomaly Detection</h2>
+<p>Auth0 offers a pretty unique anomaly detection service that can be activated with the flip of a switch. What this does is prevents bad guys from executing brute force attacks to try and steal your password. There is even an option to check for beached password that might have leaked elsewhere. Stormpath does not offer any type of anomaly detection from what I could find.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h2>Passwordless Authentication</h2>
+<p>Another big standout feature for Auth0 is it’s passwordless authentication. I haven’t seen too many sites use this, but basically it allows you to create an account and login without setting a password. The user instead gets a code or link delivered to their phone or email address and logs in that way. I didn’t find options for this type of login through Stormpath.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h2>Pricing</h2>
+<p>Auth0 and Stormpath are priced differently. Auth0 pricing is based on number of active users while Stormpath is priced per API calls. Both services lock certain features behind larger plans but both services also offer a very generous free tier to get you started. Both pricing schemes have their pros and cons so there is no clear winner here.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/stormpath-logo.png" alt="Stormpath" /> Draw</p>
+<div class="image-container">
+<div class="side-by-side">
+<h4>Stormpath</h4>
+<p>    <img src="{{ site.baseurl }}/img/stormpath-pricing.png" alt="stormpath-pricing" width="1189" />
+  </div>
+<div class="side-by-side">
+<h4>Auth0</h4>
+<p>    <img src="{{ site.baseurl }}/img/auth0-pricing-e1464218279758.png" alt="auth0-pricing" />
+  </div>
+</div>
+<h2>Hosting</h2>
+<p>Auth0 allows companies to use it’s managed service but also offers options for on-premise deployments. This is crucial for companies who are unable to use cloud services in their applications and need total control. On Stormpaths site I found a section that talks about private deployments but from the description it seemed that the solution is still hosted with them just separated from their managed service. Without clearer descriptions from Stormpath, I’ll have to give Auth0 the point on this one.</p>
+<p><strong>Winner:</strong> <img width="35" class="inline-image" src="{{ site.baseurl }}/img/2824157-e1464191862849.png" alt="Auth0" /> Auth0</p>
+<h2>Conclusion</h2>
+<p>Looking at my comparison, it’s clear that Auth0 wins at providing Authentication-as-a-Service. Auth0 seems to be attacking the authentication and authorization problem from a variety of different angles and giving the developers a lot of choice and freedom on how they use the service. This is great but does pose some issues as I feel that some of the documentation was outdated and scattered. Stormpath on the other hand, seems to be strictly focusing on a narrow segment and trying to perfect a common user flow. Both services have been responsive to entire time I used them, but at the end of the day, I would have to recommend Auth0 over Stormpath for those looking to outsource the authorization and authentication portion of their app.</p>
+<p>I have created a sample application and added authentication with both Auth0 and Stormpath. The idea here was to easily enable you to try out each and see which one you like better. Head over to the GitHub repo and try them out yourself.</p>
+<p>My experience in building these apps has been mostly positive. Auth0, I found a lot more flexible. Their Lock library was very easy to customize and integrate with the Angular SDK they provided. Stormpath also had an Angular SDK that I was able to use. Their SDK was a bit more work to setup. Stormpath does not have a widget like Lock, but they did have prebuilt directives that would give me the basic functionality to handle registration and login which was easily extensible with a custom template. Implementing the middleware to check for user authentication on the backend was painless for both Auth0 and Stormpath which was a big plus for me.</p>
+<h2>Resources</h2>
+<p><a href="https://auth0.com/" target="_blank">https://auth0.com/</a></p>
+<p><a href="https://stormpath.com/" target="_blank">https://stormpath.com/</a></p>
+<p>[button link="https://github.com/onehungrymind/Auth0vsStormpathCodeSamples" size="large" window="yes"]Code[/button]</p>

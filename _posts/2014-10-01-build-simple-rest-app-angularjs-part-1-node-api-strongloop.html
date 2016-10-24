@@ -1,0 +1,187 @@
+---
+layout: post
+title: Build a Simple REST Application with AngularJS Pt 1 Node API with Strongloop
+date: 2014-10-01 05:34:10.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Node
+- Programming
+tags: []
+meta:
+  _edit_last: '8'
+  _oembed_bf800462a232daab980f7a26e33239e0: <iframe src="//fast.wistia.net/embed/iframe/5xlbq257w3"
+    allowtransparency="true" frameborder="0" scrolling="no" class="wistia_embed" name="wistia_embed"
+    allowfullscreen mozallowfullscreen webkitallowfullscreen oallowfullscreen msallowfullscreen
+    width="500" height="375"></iframe>
+  _oembed_time_bf800462a232daab980f7a26e33239e0: '1412127000'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '897'
+  _wp_old_slug: build-simple-rest-website-angularjs-part-1-node-api-strongloop
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Project</h2>
+<p>Welcome to the first part of a series where we are going to learn how to build a simple REST website using AngularJS, Node.js and MongoDB. When we are finished with the series, we will have a fully working website with a <a href="http://en.wikipedia.org/wiki/Master%E2%80%93detail_interface" title="Master Detail Interface" target="_blank">master-detail interface</a> that uses the <strong>$http</strong> service to communicate with a RESTful API that we will create using <strong>LoopBack</strong> from <strong>StrongLoop</strong>.</p>
+<p>The code is divided into two repositories – the API and the website that consumes the API.</p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]Simple Rest API[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-website" size="large" window="yes"]Simple Rest Website[/button]</p>
+<h2>Seeing is Believing aka TLDR</h2>
+<p><iframe src="//fast.wistia.net/embed/iframe/5xlbq257w3" allowtransparency="true" frameborder="0" scrolling="no" class="wistia_embed" name="wistia_embed" allowfullscreen mozallowfullscreen webkitallowfullscreen oallowfullscreen msallowfullscreen width="960" height="720"></iframe></p>
+<h2>Building the API</h2>
+<p>LoopBack provides a really easy way to generate a REST API in less than a minute. A minute? Totally not kidding! LoopBack uses Yeoman to provide the robot army to do our bidding, so basically you type a command and then answer some questions and done. If you want to see what happens in between terminal commands, please check out the video above. Read on for the highlights.</p>
+<p>First you need to install the StrongLoop API server which is an NPM command.</p>
+<p>[raw]<br />
+$ npm install -g strongloop<br />
+[/raw]</p>
+<p>And then we need to generate our project. You will enter in the directory where you want to create the project and your project name, which in this case will be <strong>simple-rest-api</strong>.</p>
+<p>[raw]<br />
+$ slc loopback<br />
+[/raw]</p>
+<p>Now that the project is generated, we will jump into the project directory.</p>
+<p>[raw]<br />
+$ cd simple-rest-api<br />
+[/raw]</p>
+<p>We then set up our datasource and point it to an <strong>ItemsDB</strong> database. This is where we choose <strong>MongoDB</strong> as our datasource.</p>
+<p>[raw]<br />
+$ slc loopback:datasource ItemsDB<br />
+[/raw]</p>
+<p>And now to define our model. This is where we choose the datasource, input the plural form of the model name, and define the properties of the model.</p>
+<p>[raw]<br />
+$ slc loopback:model Item<br />
+[/raw]</p>
+<p>Because we are using MongoDB, we need to install the <strong>loopback-connector-mongodb</strong> package.</p>
+<p>[raw]<br />
+$ npm install loopback-connector-mongodb<br />
+[/raw]</p>
+<p>And we are ready to roll!</p>
+<p>[raw]<br />
+$ slc run<br />
+[/raw]</p>
+<p>You will then be able to go to <strong>http://localhost:3000/explorer</strong> to see the StrongLoop API Explorer; this is a great utility for exploring and interacting with your new API.</p>
+<h2>Consuming the API</h2>
+<p><img src="{{ site.baseurl }}/img/website.png" alt="Simple REST Website" width="1024" height="455" class="alignnone size-full wp-image-896" /></p>
+<p>We are going to get into how to build the AngularJS website on top of our new minted API in the next lesson, but I wanted to take the opportunity to show you how to consume the API via the <strong>$http</strong> service.</p>
+<p>When working with remote services, I like to extract out the endpoint URI into a constant so that if I need to change it, I only have to do it in one place. We accomplish this by creating a constant service called <strong>ENDPOINT_URI</strong> and giving it a value of <strong>http://localhost:3000/api/</strong></p>
+<p>[js]<br />
+ angular.module('SimpleRESTWebsite', [])<br />
+  .constant('ENDPOINT_URI', 'http://localhost:3000/api/')<br />
+  .service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+    // Pending<br />
+  });<br />
+[/js]</p>
+<p>We will also define a model called ItemsModel and inject in the $http and ENDPOINT_URI service into it. Because RESTful APIs are driven by convention, it is handy to create a few helper functions to generate the URLs you will use to communicate with the API. Because we are working with <strong>items</strong>, we will initialize a <strong>path</strong> variable to <strong>items/</strong>.</p>
+<p>From here we will use <strong>getUrl</strong> and <strong>getUrlForId</strong> to generate our base URL and an item specific URL, respectively.</p>
+<p>[js]<br />
+  angular.module('SimpleRESTWebsite', [])<br />
+  .constant('ENDPOINT_URI', 'http://localhost:3000/api/')<br />
+  .service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+    var service = this,<br />
+    path = 'items/';</p>
+<pre><code>function getUrl() {
+  return ENDPOINT_URI + path;
+}
+
+function getUrlForId(itemId) {
+  return getUrl(path) + itemId;
+}
+
+// Pending
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>The <strong>$http</strong> service was built with convenience methods modeled after the <a href="http://en.wikipedia.org/wiki/Representational_state_transfer#Applied_to_web_services" title="REST Verbs" target="_blank">REST verbs</a>. This is great because, if you understand REST, the methods below will be fairly self documenting.</p>
+<p>[js]<br />
+$http.get();<br />
+$http.post();<br />
+$http.put();<br />
+$http.delete();<br />
+[/js]</p>
+<p>And so let us examine these methods in the context of the <strong>ItemsModel</strong>.</p>
+<p>[js]<br />
+angular.module('SimpleRESTWebsite', [])<br />
+  .constant('ENDPOINT_URI', 'http://localhost:3000/api/')<br />
+  .service('ItemsModel', function ($http, ENDPOINT_URI) {<br />
+    var service = this,<br />
+    path = 'items/';</p>
+<pre><code>function getUrl() {
+  return ENDPOINT_URI + path;
+}
+
+function getUrlForId(itemId) {
+  return getUrl(path) + itemId;
+}
+
+service.all = function () {
+  return $http.get(getUrl());
+};
+
+service.fetch = function (itemId) {
+  return $http.get(getUrlForId(itemId));
+};
+
+service.create = function (item) {
+  return $http.post(getUrl(), item);
+};
+
+service.update = function (itemId, item) {
+  return $http.put(getUrlForId(itemId), item);
+};
+
+service.destroy = function (itemId) {
+  return $http.delete(getUrlForId(itemId));
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And now we can fully interact with our Node.js API! We can...</p>
+<ul>
+<li>Get all items by calling <strong>service.all</strong></li>
+<li>Get a single item by calling <strong>service.fetch</strong></li>
+<li>Create an item by calling <strong>service.create</strong></li>
+<li>Update an existing item by calling <strong>service.update</strong></li>
+<li>Delete an existing item by calling <strong>service.delete</strong></li>
+</ul>
+<h2>Review</h2>
+<p>We conclude this lesson with a Node.js REST API generated by LoopBack and consumed by the <strong>ItemsModel</strong> in AngualrJS. Just a quick review of what we covered.</p>
+<ul>
+<li>LoopBack is a Node.js framework that helps you quickly create REST APIs</li>
+<li>To work with LoopBack you need to install the StrongLoop API server via <strong>npm install -g strongloop</strong></li>
+<li>You can configure your data source and data models with <strong>slc strongloop:datasource</strong> and <strong>slc strongloop:model</strong></li>
+<li>LoopBack comes with an awesome API explorer which you can see at <strong>http://localhost:3000/explorer</strong></li>
+<li>The <strong>$http</strong> service has RESTful convenience methods such as <strong>get</strong>, <strong>post</strong>, <strong>put</strong>, <strong>delete</strong>, etc.</li>
+</ul>
+<p>And I will leave you with this bit of code as a lead-in to the next installment of this series where we will build out the AngularJS portion of the project.</p>
+<p>[js]<br />
+angular.module('SimpleRESTWebsite', [])<br />
+  .controller('MainCtrl', function (ItemsModel) {<br />
+    var main = this;</p>
+<pre><code>function getItems() {
+  ItemsModel.all()
+    .then(function (result) {
+      main.items = result.data;
+    });
+}
+getItems();
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>I really love working with JavaScript, and the momentum of having great tools like AngularJS and LoopBack is sometimes just astonishing. I really hope I have sufficiently shown you a path to building awesome things a bit faster and better. See you in the next lesson!</p>
+<h2>Resources</h2>
+<p>Be sure to checkout the StrongLoop documentation as I have barely touched the surface of what it can do.</p>
+<p><a href="http://strongloop.com/get-started/" title="Getting Starting with StrongLoop" target="_blank">Getting Starting with StrongLoop</a></p>
+<p>And the AngularJS docs are basically on speed dial.</p>
+<p><a href="https://docs.angularjs.org/api/ng/service/$http" title="$HTTP Documentation" target="_blank">Documentation for $HTTP</a></p>
+<p>Check out a free video series I did for <a href="https://egghead.io/" title="egghead.io" target="_blank">egghead.io</a> that covers a lot of these same topics. My videos aside, <a href="https://egghead.io/" title="egghead.io" target="_blank">egghead.io</a> is one of the absolute best resources for learning AngularJS.</p>
+<p><a href="https://egghead.io/series/angularjs-app-from-scratch-getting-started" title="AngularJS App from Scratch" target="_blank">AngularJS App from Scratch</a></p>
+<p>[button link="https://github.com/simpulton/simple-rest-api" size="large" window="yes"]Simple Rest API[/button]</p>
+<p>[button link="https://github.com/simpulton/simple-rest-website" size="large" window="yes"]Simple Rest Website[/button]</p>

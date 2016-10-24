@@ -1,0 +1,64 @@
+---
+layout: post
+title: Ionic ProTips for the Awesome and Lazy Developer
+date: 2015-02-11 15:08:57.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Mobile
+- Programming
+- UI
+tags: []
+meta:
+  _edit_last: '1'
+  _thesis_post_image: a:1:{s:5:"image";a:4:{s:3:"url";s:0:"";s:6:"height";s:0:"";s:5:"width";s:0:"";s:2:"id";s:0:"";}}
+  _thesis_post_thumbnail: a:1:{s:5:"image";a:4:{s:3:"url";s:0:"";s:6:"height";s:0:"";s:5:"width";s:0:"";s:2:"id";s:0:"";}}
+  _thumbnail_id: '1017'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _oembed_44de88f697ad4e09b74a72c1d7a27d76: '{{unknown}}'
+  _oembed_b2dcdb96960ab3f127de6a0f1497e561: '{{unknown}}'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>I recently had the privilege of giving a presentation for <a href="http://ionicframework.com/" title="Ionic" target="_blank">Ionic</a> at <a href="http://hack-a-ton.com/" title="Hack-a-ton SF" target="_blank">Hack-a-ton SF</a>. My goal was to show the attendees how to get up and running and start building mobile apps in as short an amount of time as possible. I asked <a href="https://twitter.com/maxlynch" title="Max Lynch" target="_blank">Max Lynch</a>, <a href="https://twitter.com/adamdbradley" title="Adam Bradley" target="_blank">Adam Bradley</a> and <a href="https://twitter.com/andrewtjoslin" title="Andrew Joslin" target="_blank">Andrew Joslin</a> to share some of their best tips and tricks for working with Ionic. My presentation ending up as an ultra-condensed Ionic crash course and some awesome protips delivered on a silver platter for people to dig in and start rocking their mobile app. </p>
+<p>I had a lot of great feedback on the presentation so I wanted to share a version of it in this post. So for your consumption, I recorded a version of the ultra-condensed version of what I did in the presentation as well as posted the slides and protips. I think Ionic is an amazing framework and I love working with it as it takes over and does a lot of the heavy lifting for me. Basically, I am lazy and it makes me appear more awesome than I am. FTW!</p>
+<h2>The Crash Course!</h2>
+<p><iframe src="//fast.wistia.net/embed/iframe/r7zv3qn9wo" allowtransparency="true" frameborder="0" scrolling="no" class="wistia_embed" name="wistia_embed" allowfullscreen mozallowfullscreen webkitallowfullscreen oallowfullscreen msallowfullscreen width="1024" height="576"></iframe><script src="//fast.wistia.net/assets/external/E-v1.js" async></script></p>
+<h2>The Slides</h2>
+<p><iframe src="//www.slideshare.net/slideshow/embed_code/44386379" width="1024" height="790" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe></p>
+<h2>The ProTips</h2>
+<h3>Copy From The Docs</h3>
+<p><img src="{{ site.baseurl }}/img/ionic-docs.png" alt="Ionic Docs" width="1024" height="739" class="alignnone size-full wp-image-1019" /></p>
+<p>I am borrowing this line from Max because I thought it was so awesome. It is totally reasonable to make an Ionic app by copying and pasting example code from the docs. The Ionic documentation is really well done and an incredible resource for finding working code that you can use immediately. </p>
+<p><strong>CSS Components</strong></p>
+<p><a href="http://ionicframework.com/docs/components/" title="Ionic Components Docs" target="_blank">http://ionicframework.com/docs/components/</a></p>
+<p><strong>JavaScript API</strong></p>
+<p><a href="http://ionicframework.com/docs/api/" title="Ionic JavaScript Docs" target="_blank">http://ionicframework.com/docs/api/</a></p>
+<h3>Check Out Ionic's CodePens</h3>
+<p>Check out Ionic's example <a href="http://codepen.io/ionic/public-list" title="Ionic CodePens" target="_blank">CodePens</a> if the docs don't have enough example code for you. Seriously. Your next hackathon is pretty much in the bag with this resource. </p>
+<h3>One-Time Binding FTW</h3>
+<p>For scrolling and large lists, try to use Angular 1.3's one-time binding for super fast updates. #micDrop</p>
+<h3>ngCordova Loves You</h3>
+<p><img src="{{ site.baseurl }}/img/cta-image-1024x256.png" alt="ngCordova" width="1024" height="256" class="alignnone size-large wp-image-1020" /></p>
+<p>Ionic has a huge collection of device APIs wrapped with AngularJS to make them super easy to use, and do things like use promises, etc: <a href="http://ngcordova.com/" title="ngCordova" target="_blank">http://ngcordova.com/</a></p>
+<h3>Use Crosswalk</h3>
+<p>Use crosswalk on Android to increase performance <a href="http://ionicframework.com/blog/crosswalk-comes-to-ionic/" title="Ionic and Crosswalk" target="_blank">http://ionicframework.com/blog/crosswalk-comes-to-ionic/</a></p>
+<h3>Let Ionic Work For You</h3>
+<p>Ionic some great tools like Ionic View, Ionic Lab and the Ionic Resources generator to make testing easy and to make it easy to generate splashscreens and icons.</p>
+<ul>
+<li><a href="http://ionicframework.com/blog/view-app-is-alive/" title="Ionic View" target="_blank">http://ionicframework.com/blog/view-app-is-alive/</a></li>
+<li><a href="http://ionicframework.com/blog/automating-icons-and-splash-screens/" title="Ionic Splash Screens" target="_blank">http://ionicframework.com/blog/automating-icons-and-splash-screens/</a></li>
+<li><a href="http://ionicframework.com/blog/ionic-lab/" title="Ionic Lab" target="_blank">http://ionicframework.com/blog/ionic-lab/</a></li>
+</ul>
+<h3>BONUS: Use Ionic Run</h3>
+<p>Adam Bradley hit me up with another great tip to streamline our workflow and by "streamline our workflow" I mean "be totally lazy". Use <strong>ionic run</strong> to combine <strong>ionic build</strong> and <strong>ionic emulate</strong> into a single command. Hey! Those single lines add up!</p>
+<h2>In Conclusion</h2>
+<p>I love when a technology just gets out of the way and lets me focus on expressing my ideas and building awesome stuff. This is why Ionic is one of my favorite tools in my toolkit and I especially appreciate the hard work that has been put into making the experience so pleasant and easy. I love it when I can be lazy and maintain an air of awesomeness!</p>
+<p>Have Ionic tips of your own? Leave them in the comments below!</p>

@@ -1,0 +1,354 @@
+---
+layout: post
+title: AngularJS Directives - Basics
+date: 2012-04-14 06:05:56.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+tags: []
+meta:
+  _edit_last: '8'
+  _wp_old_slug: angularjs-directives-bouncy-balls-and-lessons-learned
+  layout: default
+  hide_post_title: default
+  unlink_post_title: default
+  hide_post_meta: default
+  hide_post_date: default
+  hide_post_image: default
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<p>I have recently been working with AngularJS directives and this is probably my favorite feature of the project. It is a really clever and powerful way to extend HTML to do new things. As someone who has spent a lot of time doing Flex development, custom declarative markup that represents an underlying component is like an old friend.</p>
+<p>In this post, we will explore a series of examples that build in complexity to help us understand directives. We are going to start out with an extremely simple example and iterate over it to see how and why you build directives.</p>
+<h2>Act One: The Setup</h2>
+<p>Here is the starting setup that we are going to be building on. It is static html with four divs positioned on the screen.</p>
+<p>The plunker is here:<br />
+<a href="http://plnkr.co/edit/y6cNxP?p=preview/" title="http://plnkr.co/edit/y6cNxP?p=preview/" target="_blank">http://plnkr.co/edit/y6cNxP?p=preview/</a></p>
+<p>Here is the HTML:</p>
+<p>{% highlight html %}</p>
+<div class="boundingBox">
+<div class="circle" style="background-color:#900; left:50px; top:50px;"></div>
+<div class="circle" style="background-color:#060; left:110px; top:70px;"></div>
+<div class="circle" style="background-color:#006; left:170px; top:90px;"></div>
+<div class="circle" style="background-color:#963; left:230px; top:110px;"></div>
+</div>
+<p>{% endhighlight %}</p>
+<p>And the CSS:</p>
+<p>[css]<br />
+.boundingBox {<br />
+    width: 600px;<br />
+    height: 600px;<br />
+    background-color: #333333;<br />
+    margin:20px;<br />
+}</p>
+<p>.circle {<br />
+    display:block;<br />
+    position:absolute;<br />
+    height: 20px;<br />
+    width: 20px;<br />
+    background-color: #999;<br />
+    -moz-border-radius: 15px;<br />
+    -webkit-border-radius: 15px;<br />
+    border-radius: 15px;<br />
+}</p>
+<p>.box {<br />
+    display:block;<br />
+    position:absolute;<br />
+    height: 20px;<br />
+    width: 20px;</p>
+<p>}</p>
+<p>#controls {<br />
+    position: absolute;<br />
+    top: 620px;<br />
+}<br />
+[/css]</p>
+<p>Nothing fancy here. Just four divs in a box.</p>
+<h2>Act Two: Enter AngularJS</h2>
+<p>Let's take this a step further and make the properties dynamic. We are going to introduce AngularJS in this example to showcase some awesome dynamic functionality.</p>
+<p>The plunker is here:<br />
+<a href="http://plnkr.co/edit/ErNLMn?p=preview/" title="http://plnkr.co/edit/ErNLMn?p=preview/" target="_blank">http://plnkr.co/edit/ErNLMn?p=preview/</a></p>
+<p>The HTML:<br />
+{% highlight html %}</p>
+<div ng-app="animateApp" ng-controller="AnimateCtrl">
+<div class="boundingBox">
+<div class="circle" ng-repeat="shape in shapes" ng-style="{ 'backgroundColor':shape.color, 'left':shape.x+'px', 'top':shape.y+'px' }">
+       </div>
+</p></div>
+</div>
+<p>{% endhighlight %}</p>
+<p>A few things worth noting in the HTML.</p>
+<p>We are auto-bootstrapping the AngularJS application with the <strong>ng-app</strong> directive and assigning it a module.</p>
+<p>We are going to assign a controller to the <strong>animateApp</strong> scope with the <strong>ng-controller</strong> directive. We will dig into the actual controller in just a moment.</p>
+<p>We are using <strong>ng-repeat</strong> to loop over a data structure and instantiate the enclosing code once per item in the collection.</p>
+<p>We are also using <strong>ng-style</strong> to set styles on the html element conditionally.</p>
+<p>Now for the JavaScript:<br />
+[js]<br />
+angular.module('animateApp', [])</p>
+<p>.controller('AnimateCtrl', function($scope) {</p>
+<pre><code>function buildShape () {
+    return {
+        color     : '#' + (Math.random() * 0xFFFFFF &lt;&lt; 0).toString(16),
+        x         : Math.min(380,Math.max(20,(Math.random() * 380))),
+        y         : Math.min(180,Math.max(20,(Math.random() * 180)))
+    };
+};
+
+// Publish list of shapes on the $scope/presentationModel
+$scope.shapes   = [];
+
+// Create shapes
+for (i = 0; i &lt; 100; i++) {
+    $scope.shapes.push( buildShape() );
+}
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>Here we instantiate the module and give it a name of <strong>animateApp</strong>. Next, we create our controller <strong>AnimateCtrl</strong>, and this is where all the magic happens.</p>
+<p>We are creating a public variable called <strong>shapes</strong> on the <strong>$scope</strong> object for use in the <strong>ng-repeat</strong> directive. This is a simple array with JSON objects that we will use to set properties on the template when it renders.</p>
+<p>We then create a loop which calls <strong>buildShape</strong> one hundred times and randomly sets properties on the object. It is worth noting that <strong>buildShape</strong> is effectively a private method since it is not attached to the <strong>$scope</strong> object.</p>
+<p>Now we have 100 balls on the stage with random positions and colors. We have also covered a few really slick AngularJS directives in the process. My favorites are <strong>ng-repeat</strong> and <strong>ng-style</strong> for doing a lot of DOM manipulation with very little code.</p>
+<h2>Act Three: Animate!</h2>
+<p>Let's add a bit of animation to this example before we get to our directive. We are not going to make any changes to our HTML but just add some functionality to our controller.</p>
+<p>The plunker is here:<br />
+<a href="http://plnkr.co/edit/6fT6op?p=preview/" title="http://plnkr.co/edit/6fT6op?p=preview/" target="_blank">http://plnkr.co/edit/6fT6op?p=preview/</a></p>
+<p>Here is the JavaScript:</p>
+<p>[js]<br />
+angular.module('animateApp', [])<br />
+.controller('AnimateCtrl', function($scope, $timeout) {</p>
+<pre><code>function buildShape () {
+    var maxVelocity = 200;
+    return {
+        color     : '#' + (Math.random() * 0xFFFFFF &lt;&lt; 0).toString(16),
+        x         : Math.min(380,Math.max(20,(Math.random() * 380))),
+        y         : Math.min(180,Math.max(20,(Math.random() * 180))),
+
+        velX    : (Math.random() * maxVelocity),
+        velY    : (Math.random() * maxVelocity)
+    };
+};
+
+// Publish list of shapes on the $scope/presentationModel
+// Then populate the list with 100 shapes randomized in position
+// and color
+$scope.shapes = [];
+for (i = 0; i &lt; 100; i++) {
+    $scope.shapes.push( buildShape() );
+}
+
+// Start timer-based, changes of the shape properties
+animator( $scope.shapes, $timeout );
+</code></pre>
+<p>});</p>
+<p>function animator(shapes, $timeout) {<br />
+    (function tick() {<br />
+        var i;<br />
+        var now = new Date().getTime();<br />
+        var maxX      = 600;<br />
+        var maxY      = 600;<br />
+        var now = new Date().getTime();</p>
+<pre><code>     for (i = 0; i &lt; shapes.length; i++) {
+       var shape = shapes[i];
+       var elapsed = (shape.timestamp || now) - now;
+
+       shape.timestamp = now;
+       shape.x += elapsed * shape.velX / 1000;
+       shape.y += elapsed * shape.velY / 1000;
+
+       if (shape.x &gt; maxX) {
+           shape.x = 2 * maxX - shape.x;
+           shape.velX *= -1;
+       }
+       if (shape.x &lt; 30) {
+           shape.x = 30;
+           shape.velX *= -1;
+       }
+
+       if (shape.y &gt; maxY) {
+           shape.y = 2 * maxY - shape.y;
+           shape.velY *= -1;
+       }
+       if (shape.y &lt; 20) {
+           shape.y = 20;
+           shape.velY *= -1;
+       }
+     }
+
+     $timeout(tick, 30);
+})();
+</code></pre>
+<p>}<br />
+[/js]</p>
+<p>The most obvious addition to this code is the <strong>animator</strong> function. I am not going to dig into the nuts and bolts of how this works since it is not specific to AngularJS per se. The part I want to focus on in this example is the use of the <strong>$timeout</strong> object.</p>
+<p>The <strong>$timeout</strong> object is basically a <strong>setTimeout</strong> wrapper with some extra functionality such as exception handling and an asynchronous id. The id allows you to call <strong>$timeout.cancel</strong> to allow for clean up when it is no longer needed.</p>
+<p>So how is it actually animating? When properties change, databinding fires and the DOM element with <strong>ng-styles</strong> updates for the associated shape. In fact, <strong>ng-styles</strong> uses databinding to update the CSS styles whenever the shape properties 'x', 'y', or 'color' changes. So the DOM elements look-n-feel are data-driven by the data model <strong>shape</strong>. Pretty simple!</p>
+<h2>Act Four: Attribute Directive</h2>
+<p>So we already have something that is pretty cool and well encapsulated. <strong>But can we make it even simpler?</strong></p>
+<p>Yes, and this is where directives come in. Directives are a way to teach HTML new tricks. For instance, a brand new element tag or attribute. Directives are not limited to new tags and attributes, but can be used to create class names and even comments.</p>
+<p>We are going to create an attribute directive and that is going to hide the complexities of the DOM manipulation and handle it for us.</p>
+<p>The plunker is here:<br />
+<a href="http://plnkr.co/edit/B48Q12?p=preview/" title="http://plnkr.co/edit/B48Q12?p=preview/" target="_blank">http://plnkr.co/edit/B48Q12?p=preview/</a></p>
+<p>The HTML is here:</p>
+<p>{% highlight html %}</p>
+<div ng-app="animateApp" ng-controller="AnimateCtrl">
+<div class="boundingBox">
+<div class="circle" ng-repeat="shape in shapes" animate="shape">
+       </div>
+</p></div>
+</div>
+<p>{% endhighlight %}</p>
+<p>Notice the <strong>animate</strong> attribute and its value <strong>shape</strong>. We are invoking the animate attribute and injecting the shape object.</p>
+<p>And now for the directive:</p>
+<p>[js]<br />
+angular<br />
+.module('animateApp', [])<br />
+.directive('animate', function($timeout) {<br />
+    return {<br />
+        restrict: 'A',<br />
+        link: function(scope, element, attrs)<br />
+        {<br />
+            var target = attrs.animate;<br />
+            scope.$watch( 'shape', function(val) {<br />
+                var changes = {<br />
+                    left : val.x + 'px',<br />
+                    top  : val.y + 'px',<br />
+                    backgroundColor : val.color<br />
+                }</p>
+<pre><code>            element.css( changes );
+        }, true );
+    }
+};
+</code></pre>
+<p>})<br />
+.controller('AnimateCtrl', function($scope, $timeout) {</p>
+<pre><code>function buildShape () {
+// Edited for brevity
+};
+
+// Publish list of shapes on the $scope/presentationModel
+// Then populate the list with 100 shapes randomized in position
+// and color
+$scope.shapes   = [];
+for (i = 0; i &lt; 100; i++) {
+    $scope.shapes.push( buildShape() );
+}
+
+// Start timer-based, changes of the shape properties
+animator( $scope.shapes, $timeout);
+</code></pre>
+<p>});<br />
+function animator(shapes, $timeout) {<br />
+    // Edited for brevity<br />
+}<br />
+[/js]</p>
+<p>So let's break down what is happening in our directive code.</p>
+<p>A directive in its simplest form looks like this:</p>
+<p>[js]<br />
+module.directive('myAwesomeDirective', function() {<br />
+    return {<br />
+        // directive definition object goes here<br />
+    };<br />
+});<br />
+[/js]</p>
+<p>You call the directive function on <strong>module</strong> and give it a name and start to define its behavior in the factory function and the directive declaration object ("DDO") it returns.</p>
+<p><strong>Gotcha! Directives have camel cased names but are invoked by translating the camel case name into snake case. For example, a directive called "myAwesomeDirective" will be referenced "my-awesome-directive".</strong></p>
+<p>There are quite a few properties that you can set on the DDO and I am going to cover two of them in this tutorial.</p>
+<blockquote><p>
+restrict - String of subset of EACM which restricts the directive to a specific directive declaration style. If omitted directives are allowed on attributes only.
+</p></blockquote>
+<p>and</p>
+<blockquote><p>
+link - Link function is responsible for registering DOM listeners as well as updating the DOM. It is executed after the template has been cloned. This is where most of the directive logic will be put.
+</p></blockquote>
+<p>I only wanted my directive to be used as an HTML attribute so I set <strong>restrict</strong> to <strong>A</strong>.</p>
+<p>[js]<br />
+module.directive('animate', function() {<br />
+    return {<br />
+        restrict: 'A'<br />
+    };<br />
+});<br />
+[/js]</p>
+<p>And now for the link function</p>
+<p>[js]<br />
+module.directive('animate', function () {<br />
+    return {<br />
+        restrict:'A',<br />
+        link:function (scope, element, attrs) {<br />
+            scope.$watch('shape', function (val) {<br />
+                var changes = {<br />
+                    left:val.x + 'px',<br />
+                    top:val.y + 'px',<br />
+                    backgroundColor:val.color<br />
+                }</p>
+<pre><code>            element.css(changes);
+        }, true);
+    }
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>The most important thing here is the <strong>$watch</strong> method on the <strong>scope</strong> object. The <strong>$watch</strong> object allows us to register a callback when <strong>shape</strong> changes and execute the closure we send in. In the callback, we are simply building a new object and applying it to the <strong>jQuery css</strong> property on <strong>element</strong> in a single call.</p>
+<p>We are setting the last parameter to <strong>true</strong> since it is an object equality parameter which compares equality and not reference.</p>
+<p>You can also chain the module and directive function together like I did in this example. This is considered best practice and it allows us to manage functionality via chaining. It is also convenient!</p>
+<p>Now look at how simple the HTML element is?! You can add the <strong>animate</strong> attribute to anything and the animate functionality will be attached.</p>
+<h2>Act Five: Widget Directive</h2>
+<p>We are going to make one small variation on our previous example and make this an element directive. This makes it more widget-like which I really dig.</p>
+<p>The plunker is here:<br />
+<a href="http://plnkr.co/edit/X0c6tL?p=preview/" title="http://plnkr.co/edit/X0c6tL?p=preview/" target="_blank">http://plnkr.co/edit/X0c6tL?p=preview/</a></p>
+<p>{% highlight html %}</p>
+<div ng-app="animateApp" ng-controller="AnimateCtrl">
+<div class="boundingBox">
+       <ball ng-repeat="shape in shapes" x="shape.x" y="shape.y" color="shape.color"></p>
+<p>    </ball></div>
+</div>
+<p>?<br />
+{% endhighlight %}</p>
+<p>Notice that the element is now a <strong>ball element</strong> which then ties to our <strong>ball directive</strong>. We are also setting each attribute individually.</p>
+<p>[js]<br />
+angular<br />
+.module('animateApp', [])<br />
+.directive('ball', function ($timeout) {<br />
+    return {<br />
+        restrict:'E',<br />
+        link:function (scope, element, attrs) {<br />
+            element.addClass('circle');</p>
+<pre><code>        scope.$watch(attrs.x, function (x) {
+            element.css('left', x + 'px');
+        });
+        scope.$watch(attrs.y, function (y) {
+            element.css('top', y + 'px');
+        });
+        scope.$watch(attrs.color, function (color) {
+            element.css('backgroundColor', color);
+        });
+    }
+};
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>The two big differences in this directive is that we are setting <strong>restrict</strong> on the directive to <strong>E</strong> for <strong>element</strong>.</p>
+<p>This is also cool because the directive silently adds the <strong>circle</strong> class to the DOM element.</p>
+<p>Notice that two levels of databinding are occuring here:</p>
+<ol>
+<li>The <strong>&lt;ball x="shape.x" /&gt;</strong> tag establishes databinding to update its own x, y, and color whenever the shape x, y, and color change (respectively).</li>
+<li>The <strong>.directive('ball',function ($timeout) {...});</strong> also uses <strong>$watch()</strong> to establish databindings on itself. When its own x, y, color properties change, the  associated DOM element styles are updated.</li>
+</ol>
+<h2>Conclusion</h2>
+<p>Directives are very powerful and a really great way to separate functionality from presentation. I really like that separation in Flex and I love it in AngularJS.</p>
+<p>Also, I have to say that the AngularJS community is <strong>INCREDIBLE</strong>! I recieved tons of valuable feedback from Misko Hevery and Igor Minar. I also want to give super huge props to my new BFF, <a href="http://www.gridlinked.info" title="http://www.gridlinked.info" target="_blank">Thomas Burleson</a>. His feedback was far beyond the call of duty, and my grasp of AngularJS has been greatly advanced under his guidance.</p>
+<h2>Resources</h2>
+<p>John Lindquist has a great screencast on directives. Check out his other screencasts while you are at it!<br />
+<a href="http://johnlindquist.com/2012/04/16/angularjs_directive_tutorial.html" title="http://johnlindquist.com/2012/04/16/angularjs_directive_tutorial.html" target="_blank">http://johnlindquist.com/2012/04/16/angularjs_directive_tutorial.html</a></p>
+<p>Directive documentation<br />
+<a href="http://docs-next.angularjs.org/api/angular.module.ng.$compileProvider.directive" title="http://docs-next.angularjs.org/api/angular.module.ng.$compileProvider.directive" target="_blank">http://docs-next.angularjs.org/api/angular.module.ng.$compileProvider.directive</a></p>
+<p>AngularJS Mailing List<br />
+<a href="https://groups.google.com/forum/?fromgroups#!forum/angular" title="https://groups.google.com/forum/?fromgroups#!forum/angular" target="_blank">https://groups.google.com/forum/?fromgroups#!forum/angular</a></p>

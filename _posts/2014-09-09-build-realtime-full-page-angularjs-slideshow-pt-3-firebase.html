@@ -1,0 +1,223 @@
+---
+layout: post
+title: Build a REALTIME Full Page AngularJS Slideshow Pt 3 with Firebase
+date: 2014-09-09 19:51:41.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- Firebase
+- Greensock
+- JavaScript
+tags: []
+meta:
+  _edit_last: '8'
+  _thumbnail_id: '864'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>Some Real Talk</h2>
+<p>I am a programmer because ultimately I love to create things. And I find that my most gratifying creations come from taking a simple idea and iterating over and over on it and exploring different ideas around a single premise. I love that moment when you are able to create something new and cool with just a few small tweaks in the code or a tiny addition to the codebase. In this post we are going to do that by creating a realtime slideshow based on the previous slideshow posts <a href="http://onehungrymind.com/build-a-full-page-angularjs-slideshow/" target="_blank">here</a> and <a href="http://onehungrymind.com/build-a-full-page-angularjs-slideshow-pt-2-with-sequencing/" target="_blank">here</a>. We are going to introduce a master presenter role using Firebase to sync the current slide across all the connected clients. And my favorite part is that we are going to accomplish the realtime aspect of the slideshow in less than a dozen lines of code!</p>
+<p>Before we get started, grab the source code from Github and create a Firebase endpoint to use for your own slideshow. Setting up a Firebase endpoint is <strong>free</strong> and <strong>easy</strong> and you can find all the information you need to do that at <a href="https://www.firebase.com/" title="Firebase" target="_blank">firebase.com</a>.</p>
+<p><em>The demo is not realtime as it would be chaos but I posted it so you could get a preview into what we are going to be working with.</em></p>
+<p>[button link="https://github.com/simpulton/angularjs-greensock-master-presenter" size="large" window="yes"]Code[/button]</p>
+<p>[button link="http://onehungrymind.com/demos/master-presenter/" size="large" window="yes"]Demo[/button]</p>
+<h2>The Basic Slideshow</h2>
+<p><img src="{{ site.baseurl }}/img/he_man-145x300.jpg" alt="he_man" width="145" height="300" class="size-medium wp-image-867" /></p>
+<p>We are not going to dig into every facet of the slideshow in this post as I have extensively covered them in previous posts but I will offer some commentary on what is specific to this implementation. The structure of the slides is fairly simple with a <strong>slide.title</strong> and a <strong>slide.subtitle</strong> property that we are displaying. Like the previous slideshows, we are iterating over the <strong>slides</strong> collection and keeping track of the current slide via <strong>$index</strong>.</p>
+<p>{% highlight html %}<br />
+<body ng-controller="MainCtrl"></p>
+<div class="slide slide-animation" ng-if="isCurrentSlideIndex($index)" ng-repeat="slide in slides">
+<div class="title">{{slide.title}}</div>
+<pre><code>    &lt;div class="subtitle"&gt;{{slide.subtitle}}&lt;/div&gt;
+&lt;/div&gt;
+</code></pre>
+</div>
+<p></body><br />
+{% endhighlight %}</p>
+<p>We are using the slide-animation class to wire up the transition animation from slide to slide. The interesting part about this particular animation is that we are using <strong>element.scope()</strong> to access the <strong>$scope</strong> object on the <strong>element</strong> to get the direction of the animation. We then dynamically define our animation based on that. I have hid the implementation details of where that property is stored by creating the <strong>getDirection</strong> method to return that value for us.</p>
+<p>[js]<br />
+app.animation('.slide-animation', function ($window) {<br />
+    return {<br />
+        enter: function (element, done) {<br />
+            var scope = element.scope();</p>
+<pre><code>        var startPoint = $window.innerWidth;
+        if(scope.getDirection() !== 'right') {
+            startPoint = -startPoint;
+        }
+        TweenMax.fromTo(element, 0.5, {left: startPoint}, {left:0, onComplete: done });
+    },
+
+    leave: function (element, done) {
+        var scope = element.scope();
+
+        var endPoint = $window.innerWidth;
+        if(scope.getDirection() === 'right') {
+            endPoint = -endPoint;
+        }
+
+        TweenMax.to(element, 0.5, { left: endPoint, onComplete: done });
+    }
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>Because I knew that I wanted to synchronize an object across N connected clients, I defined the <strong>$scope.remoteSlide</strong> object to keep track of the current index and direction we need to animate. I then exposed <strong>$scope.remoteSlide.direction</strong> to <strong>slide-animation</strong> with the <strong>$scope.getDirection</strong> method as I previously stated.</p>
+<p>[js]<br />
+app.controller('MainCtrl', function ($scope, $location, RemoteSlide) {<br />
+    //... OMITTED</p>
+<pre><code>function isCurrentSlideIndex(index) {
+    return $scope.remoteSlide.currentIndex === index;
+}
+
+function prevSlide() {
+    $scope.remoteSlide.direction = 'left';
+    $scope.remoteSlide.currentIndex = ($scope.remoteSlide.currentIndex &gt; 0)
+        ? --$scope.remoteSlide.currentIndex : $scope.slides.length - 1;
+}
+
+function nextSlide() {
+    $scope.remoteSlide.direction = 'right';
+    $scope.remoteSlide.currentIndex = ($scope.remoteSlide.currentIndex &lt; $scope.slides.length - 1)
+        ? ++$scope.remoteSlide.currentIndex : 0;
+}
+
+function getDirection() {
+    return $scope.remoteSlide.direction;
+}
+
+$scope.slides = [
+    {id: 'slide00', title: 'Slide One', subtitle: 'With a supporting point!'},
+    {id: 'slide01', title: 'Slide Two', subtitle: 'With a supporting point!'},
+    {id: 'slide02', title: 'Slide Three', subtitle: 'With a supporting point!'},
+    {id: 'slide03', title: 'Slide Four', subtitle: 'With a supporting point!'},
+    {id: 'slide04', title: 'Slide Five', subtitle: 'With a supporting point!'}
+];
+
+$scope.remoteSlide = {
+    currentIndex: 0,
+    direction: 'left'
+};
+
+$scope.isCurrentSlideIndex = isCurrentSlideIndex;
+$scope.getDirection = getDirection;
+
+//... OMITTED
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And from here we are using <strong>isCurrentSlideIndex</strong>, <strong>prevSlide</strong>, and <strong>nextSlide</strong> to manipulate the <strong>remoteSlide</strong> object instead of using properties directly on <strong>$scope</strong>. Wrapping these properties in an object is going to make synchronization with Firebase a snap. Just wait and see...</p>
+<h2>Keyboard Navigation</h2>
+<p><img src="{{ site.baseurl }}/img/orko-203x300.png" alt="orko" width="203" height="300" class="size-medium wp-image-866" /></p>
+<p>But! Before we get to the main event, I am going to add in a little extra bonus for you. Since we need to be able to navigate through our slides, some simple keyboard navigation is in order. There are a bunch of libraries out there to handle this but I opted for a straight-line from-problem-to-solved option in this case.</p>
+<p>Since we need to capture keyboard events for the entire page, on the <strong>body</strong> tag I defined the <strong>ng-keyup</strong> directive that calls <strong>onKeyUp</strong> and passes in the key code for the key pressed.</p>
+<p>{% highlight html %}<br />
+<body ng-controller="MainCtrl" ng-keyup="onKeyUp($event.keyCode)"><br />
+    <!-- OMMITTED --><br />
+</body><br />
+{% endhighlight %}</p>
+<p>And from here, we can determine if the key pressed was the left or right arrow and then call <strong>prevSlide</strong> or <strong>nextSlide</strong>, respectively. I extracted out the key codes into the 'constants' <strong>LEFT_ARROW</strong> and <strong>RIGHT_ARROW</strong> so that the logic structure would read better.</p>
+<p>[js]<br />
+app.controller('MainCtrl', function ($scope, $location, RemoteSlide) {<br />
+    //... OMITTED</p>
+<pre><code>var LEFT_ARROW = 37,
+    RIGHT_ARROW = 39;
+
+function onKeyUp(keyCode) {
+    if (keyCode === LEFT_ARROW) {
+        prevSlide();
+    } else if (keyCode === RIGHT_ARROW) {
+        nextSlide();
+    }
+}
+
+//... OMITTED
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>Did we really just add in keyboard navigation in less than 10 lines of code? YEP!</p>
+<h2>Firebase</h2>
+<p><img src="{{ site.baseurl }}/img/firebase.jpg" alt="firebase" width="160" height="200" class="size-full wp-image-865" /></p>
+<p>It's about to get real up in here! I am going to warn you that this may feel weird at how easy it is to actually make this work with Firebase. I think we are looking at about 5 minutes worth of grueling labor to get this up and running.</p>
+<p>First we need to include the <strong>Firebase</strong> and <strong>AngularFire</strong> resources into our application.</p>
+<p>{% highlight html %}<br />
+<script src="https://cdn.firebase.com/js/client/1.0.21/firebase.js"></script><br />
+<script src="https://cdn.firebase.com/libs/angularfire/0.8.2/angularfire.min.js"></script><br />
+{% endhighlight %}</p>
+<p>And then we need to include the <strong>firebase</strong> submodule into our application. I also like to extract out my Firebase endpoint into an <strong>ENDPOINT_URI</strong> constant in case I need to use it in more than one place.</p>
+<p>[js]<br />
+var app = angular.module('slideshow', ['ngAnimate', 'firebase']);</p>
+<p>app.constant('ENDPOINT_URI', 'https://<your firebase>.firebaseio.com/');<br />
+[/js]</p>
+<p>And now for the 'hard' part. We are going to create a <strong>RemoteSlide</strong> service that returns a synchronized object we will bind to in our <strong>MainCtrl</strong>. We will inject the <strong>$firebase</strong> service for creating the synchronized object and the <strong>ENDPOINT_URI</strong> to tell <strong>$firebase</strong> what to synchronize with. The <strong>$firebase</strong> service takes a single argument which is a Firebase reference that we create via <strong>new Firebase(ENDPOINT_URI)</strong>. We are also telling Firebase to track this as an object with the <strong>$asObject</strong> method call.</p>
+<p>[js]<br />
+app.factory('RemoteSlide', function($firebase, ENDPOINT_URI) {<br />
+    return function() {<br />
+        // create a reference to the current slide index<br />
+        var ref = new Firebase(ENDPOINT_URI);</p>
+<pre><code>    // return it as a synchronized object
+    return $firebase(ref).$asObject();
+}
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And now, the final step to making our slideshow realtime. We need to call <strong>RemoteSlide()</strong> to get the synchronized object returned from Firebase, and then call <strong>$bindTo</strong> to create three-way binding back to the Firebase servers. By default, Firebase does not automatically save changes done to a synchronized object; but in this case, this is exactly the behavior we want and <strong>$bindTo</strong> accomplishes this nicely. By calling <strong>$bindTo($scope, 'remoteSlide')</strong> we are telling the object returned by <strong>$firebase</strong> to bind the object at the remote server to the <strong>remoteSlide</strong> property on <strong>$scope</strong> and keep them synchronized automatically.</p>
+<p>[js]<br />
+app.controller('MainCtrl', function ($scope, $location, RemoteSlide) {<br />
+    //... OMITTED</p>
+<pre><code>RemoteSlide().$bindTo($scope, 'remoteSlide');
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>From the documentation.</p>
+<blockquote><p>
+Creates a three-way binding between a scope variable and Firebase data. When the scope data is updated, changes are pushed to Firebase, and when changes occur in Firebase, they are pushed instantly into scope. This method returns a promise that resolves after the initial value is pulled from Firebase and set in the scope variable.
+</p></blockquote>
+<p>And with that single line of code... we have the power!</p>
+<p><img src="{{ site.baseurl }}/img/power.gif" alt="power" width="241" height="200" class="size-full wp-image-868" /></p>
+<h2>Presenter</h2>
+<p>And one more loose end that was bothering me. Up to this point, anyone could control the slideshow, which means many masters, which means chaos. And so I needed a quick way to delineate the presenter aka master of the universe from the viewers. I did this by passing in a URL parameter a la <strong>index.html#/?presenter=true</strong>; and then, reading it off of the <strong>$location.$search</strong> object, if the client was not the presenter I would abort any key changes.</p>
+<p>[js]<br />
+app.controller('MainCtrl', function ($scope, $location, RemoteSlide) {<br />
+    //... OMITTED</p>
+<pre><code>function onKeyUp(keyCode) {
+    if(!$scope.isPresenter) return; // Only allow presenter to navigate
+
+    if (keyCode === 37) {
+        prevSlide();
+    } else if (keyCode === 39) {
+        nextSlide();
+    }
+}
+
+$scope.isPresenter = ($location.search()).presenter;
+
+//... OMITTED
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>Easy? Yep! Could we extend this and make it more robust? Yep! Am I lazy? YEP!</p>
+<h2>Review</h2>
+<p>And so just a quick review of everything we covered in this blogpost.</p>
+<ul>
+<li>We can expose the <strong>scope</strong> of the <strong>element</strong> being animated by calling <strong>element.scope()</strong>, which presents some interesting opportunities for doing dynamic, state-based animations.</li>
+<li>We can use <strong>ng-keyup</strong> to create simple keyboard-based navigation functionality.</li>
+<li>Using $firebase and a Firebase endpoint, we can easily create an object that we can synchronize in realtime.</li>
+<li>Firebase objects do not automatically save back to the server but we can accomplish this using the <strong>$bindTo</strong> method and binding our realtime object to a property on <strong>$scope</strong></li>
+<li>We used <strong>$location.search()</strong> to grab a URL parameter to differentiate between a presenter and a viewer.</li>
+</ul>
+<p>Big props to my BFF Kato <a href="https://twitter.com/katowulf" title="Kato Wulf" target="_blank">@katowulf</a> for letting me be an all around nuisance while managing to write amazing code.</p>
+<h2>Resources</h2>
+<p><a href="https://www.firebase.com/docs/web/libraries/angular/api.html#angularfire" title="AngularFire Documentation" target="_blank">AngularFire Documentation</a></p>
+<p><a href="http://www.yearofmoo.com/2013/08/remastered-animation-in-angularjs-1-2.html" title="Remastered Animation in AngularJS 1.2" target="_blank">Remastered Animation in AngularJS 1.2</a></p>
+<p><a href="https://www.greensock.com/get-started-js/" title="Getting Started with the JavaScript Version of the GreenSock Animation Platform (GSAP)" target="_blank">Getting Started with the JavaScript Version of the GreenSock Animation Platform (GSAP)</a></p>
+<p>[button link="https://github.com/simpulton/angularjs-greensock-master-presenter" size="large" window="yes"]Code[/button]</p>
+<p>[button link="http://onehungrymind.com/demos/master-presenter/" size="large" window="yes"]Demo[/button]</your></p>

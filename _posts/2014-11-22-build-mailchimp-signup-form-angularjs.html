@@ -1,0 +1,275 @@
+---
+layout: post
+title: Build a MailChimp Signup Form with AngularJS
+date: 2014-11-22 00:04:48.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+- Programming
+- UI
+tags: []
+meta:
+  _edit_last: '8'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _thumbnail_id: '963'
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<p>The folks at <a href="http://mailchimp.com/" title="MailChimp" target="_blank">MailChimp</a> do excellent UX work, and their <a href="https://login.mailchimp.com/signup?" title="MailChimp Signup" target="_blank">signup form</a> is no exception. As a personal exercise, I decided to recreate their signup form with AngularJS; which ended up being a great learning experience so I decided to share some of my favorite parts with you in this blog post. I would also be remiss if I did not mention that this entire post is standing on the shoulders of the excellent work that <a href="http://www.yearofmoo.com/" title="Year of Moo" target="_blank">Matias Niemelä</a> did around forms and ngMessages in AngularJS 1.3.</p>
+<p>Links to the code and demo are below. I took the demo pretty far (given reasonable time constraints) but I would love to hear your ideas on how to make it even better. Let me know!</p>
+<p>[button link="http://simpulton.github.io/angularjs-mailchimp-signup/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-mailchimp-signup" size="large" window="yes"]Code[/button]</p>
+<h2>Showing Prompts</h2>
+<p><img src="{{ site.baseurl }}/img/mailchimp-prompt.png" alt="MailChimp Prompt" width="449" height="113" class="alignnone size-full wp-image-964" /></p>
+<p>The first thing we are going to tackle is showing the user a helpful prompt when a text input receives focus. We want to show a prompt when the email and username fields receive focus so we will create a flag called <strong>showEmailPrompt</strong> and <strong>showUsernamePrompt</strong> to keep track of whether or not we should show a prompt. We will also create setter functions called <strong>toggleEmailPrompt</strong> and <strong>toggleUsernamePrompt</strong> that we will use to explicitly set the value of <strong>showEmailPrompt</strong> and <strong>showUsernamePrompt</strong>, respectively.</p>
+<p>[js]<br />
+angular.module('ngMailChimp', ['ngMessages', 'ngAnimate'])<br />
+    .controller('SignUpController', function () {<br />
+        var ctrl = this;</p>
+<pre><code>    var toggleEmailPrompt = function (value) {
+        ctrl.showEmailPrompt = value;
+    };
+
+    var toggleUsernamePrompt = function (value) {
+        ctrl.showUsernamePrompt = value;
+    };
+
+    ctrl.showEmailPrompt = false;
+    ctrl.showUsernamePrompt = false;
+    ctrl.toggleEmailPrompt = toggleEmailPrompt;
+    ctrl.toggleUsernamePrompt = toggleUsernamePrompt;
+})
+</code></pre>
+<p>[/js]</p>
+<blockquote><p>
+Don't forget to include the ngMessages and ngAnimate submodules!
+</p></blockquote>
+<p>We will also initialize <strong>showEmailPrompt</strong> and <strong>showUsernamePrompt</strong> to <strong>false</strong> since we want to suppress the prompts initially.</p>
+<p>Now that we have a flag set on our controller, we can toggle the visibility of the prompt using <strong>ng-if</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="my-messages">
+<div class="prompt message-animation" ng-if="ctrl.showEmailPrompt">
+        What's your email address?
+    </div>
+</div>
+<p>{% endhighlight %}</p>
+<p>We can control that flag by calling <strong>ctrl.toggleEmailPrompt</strong> on <strong>ng-focus</strong> and <strong>ng-blur</strong>. On focus, we pass in <strong>true</strong> to show the prompt and on blur we will send in <strong>false</strong> to hide the prompt.</p>
+<p>{% highlight html %}<br />
+<input id="email" name="email" class="form-control" type="email" required ng-model="ctrl.newCustomer.email" ng-model-options="{ updateOn : 'default blur' }" ng-focus="ctrl.toggleEmailPrompt(true)" ng-blur="ctrl.toggleEmailPrompt(false)" /></p>
+<div class="my-messages">
+<div class="prompt message-animation" ng-if="ctrl.showEmailPrompt">
+        What's your email address?
+    </div>
+</div>
+<p>{% endhighlight %}</p>
+<p>Since maximizing the user experience is the goal here, we are going to add in a simple animation to enhance the showing and hiding of the prompt.</p>
+<blockquote><p>Shout out to my buddy <a href="https://twitter.com/kentcdodds" title="Kent C. Dodds" target="_blank">Kent C. Dodds</a> for giving me the idea to do this. I highly recommend <a href="https://egghead.io/instructors/kentcdodds" title="Kent's Egghead Videos" target="_blank">his videos</a> on egghead.io. They are excellent!</p></blockquote>
+<p>We are going to hook an animation into our prompt by adding the <strong>message-animation</strong> class. And in our <strong>animations.css</strong> file, our animation will operate by modifying the <strong>opacity</strong> and <strong>margin-top</strong> properties of the element. When <strong>ng-enter</strong> is triggered, we will start with <strong>opacity: 0</strong> and <strong>margin-top: -20px</strong>, then finish with the application of the <strong>ng-enter-active</strong> class and <strong>opacity: 1</strong> and <strong>margin-top: 0</strong>.</p>
+<p>[css]<br />
+.my-messages {<br />
+    position: relative;<br />
+}</p>
+<p>.message-animation {<br />
+    transition: 0.2s ease-in-out all;<br />
+}</p>
+<p>.message-animation.ng-enter {<br />
+    opacity: 0;<br />
+    margin-top: -20px;<br />
+}</p>
+<p>.message-animation.ng-enter.ng-enter-active {<br />
+    opacity: 1;<br />
+    margin-top: 0;<br />
+}</p>
+<p>.message-animation.ng-leave {<br />
+    opacity: 1;<br />
+    margin-top: 0;<br />
+}</p>
+<p>.message-animation.ng-leave-active {<br />
+    opacity: 0;<br />
+    margin-top: -20px;<br />
+}<br />
+[/css]</p>
+<p>We will essentially do the exact opposite for <strong>ng-leave</strong> and <strong>ng-leave-active</strong>. In fact! I separated these classes out for readability; but I will often stack them for conciseness.</p>
+<h2>Showing the Password</h2>
+<p><img src="{{ site.baseurl }}/img/MailChimp-Password-Show.png" alt="Mailchimp Password Show" width="435" height="141" class="alignnone size-full wp-image-966" /></p>
+<p>The next feature that I would like to build out is the ability to toggle password visibility on the password field. AngularJS is awesome in that we can bind to any value of any attribute and make it dynamic. In this case, we are going to bind to the <strong>type</strong> property of the password input field to the value returned by <strong>ctrl.getPasswordType</strong>. Notice that the password field is part of an <strong>input-group</strong>, which is a Bootstrap component that allows us to nestle a checkbox onto the end of the element. We will set the value of that checkbox to control a value called <strong>showPassword</strong> via <strong>ng-model="ctrl.signupForm.showPassword"</strong></p>
+<p>{% highlight html %}</p>
+<div class="input-group">
+    <input id="password" name="password" class="form-control" required type="{{ctrl.getPasswordType()}}" ng-model-options="{ updateOn : 'default blur' }" ng-model="ctrl.newCustomer.password" /><br />
+    <span class="input-group-addon"><br />
+        <input type="checkbox" ng-model="ctrl.signupForm.showPassword" /> Show<br />
+    </span>
+</div>
+<p>{% endhighlight %}</p>
+<p>And in the <strong>getPasswordType</strong> method, we are checking if <strong>ctrl.signupForm.showPassword</strong> is <strong>true</strong> or <strong>false</strong> and then returning <strong>'text'</strong> if it is <strong>true</strong> and <strong>'password'</strong> if it is not.</p>
+<p>[js]<br />
+.controller('SignUpController', function () {<br />
+    var ctrl = this;</p>
+<pre><code>var getPasswordType = function () {
+    return ctrl.signupForm.showPassword ? 'text' : 'password';
+};
+
+ctrl.getPasswordType = getPasswordType;
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>I was pleasantly surprised that that was all I needed to implement such a useful UX pattern.</p>
+<h2>Using ngMessages</h2>
+<p><img src="{{ site.baseurl }}/img/MailChimp-Error.png" alt="Mailchimp Error" width="444" height="139" class="alignnone size-full wp-image-967" /></p>
+<p>In the first example, we gave the user a generic prompt to guide them in filling out the field appropriately. We are going to take that a step further and use <strong>ngMessages</strong> to give the user specific feedback on the the state of their input. <strong>ngMessages</strong> makes managing this feedback really easy, compared to having to wrangle error messages via a huge heap of <strong>ng-if</strong> statements (which was necessary prior to AngularJS 1.3).</p>
+<p>The first thing that we need to do when setting up <strong>ngMessages</strong> is to create a message container and bind it to a specific field in the form. We are going to focus on the email field, so we will accomplish this goal with this bit of code here: <strong>ng-messages="ctrl.signupForm.email.$error"</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="my-messages" ng-messages="ctrl.signupForm.email.$error" ng-if="ctrl.showMessages('email')">
+</div>
+<p>{% endhighlight %}</p>
+<p>And now we just need to add in a message for each error that we want to capture. We define the specific error using <strong>ng-message</strong> and the error we want to track like this: <strong>ng-message="required"</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="my-messages" ng-messages="ctrl.signupForm.email.$error" ng-if="ctrl.showMessages('email')">
+<div class="message-animation" ng-message="required">
+        <strong>This field is required.</strong>
+    </div>
+<div class="message-animation" ng-message="email">
+        <strong>Please format your email correctly.</strong>
+    </div>
+</div>
+<p>{% endhighlight %}</p>
+<p>When <strong>ctrl.signupForm.email.$error.required</strong> is <strong>true</strong>, the element containing the error message is shown to the user. This is really nice because we still have the ability to display the error however we want based on the HTML we choose to display.</p>
+<p>Also, notice that there is an <strong>ng-if</strong> on the <strong>ng-messages</strong> div in the form of <strong>ng-if="ctrl.showMessages('email')"</strong>. By default, messages are shown immediately and <strong>ctrl.showMessages</strong> is a convenience function that allows us to override that behavior.</p>
+<p>We are essentially passing in the field name to the method and then checking to see if that field has been touched via <strong>$touched</strong> or if the form itself has been submitted via <strong>$submitted</strong>. By using the array syntax to dynamically evaluate the field, we are able to use this method in more than one place and cut down on some of the DOM clutter.</p>
+<p>[js]<br />
+.controller('SignUpController', function () {<br />
+    var ctrl = this;</p>
+<pre><code>var showMessages = function (field) {
+    return ctrl.signupForm[field].$touched || ctrl.signupForm.$submitted
+};
+
+ctrl.showMessages = showMessages;
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>We are going to apply the same technique by dynamically evaluating if we should apply a <strong>has-error</strong> class to the input element. If this field has been <strong>$touched</strong> and is <strong>$invalid</strong>, we return true so that the class can be applied.</p>
+<p>[js]<br />
+.controller('SignUpController', function () {<br />
+    var ctrl = this;</p>
+<pre><code>var hasErrorClass = function (field) {
+    return ctrl.signupForm[field].$touched 
+        &amp;&amp; ctrl.signupForm[field].$invalid;
+};
+
+ctrl.hasErrorClass = hasErrorClass;
+</code></pre>
+<p>})<br />
+[/js]</p>
+<p>The <strong>has-error</strong> class is then dynamically applied to the DOM using <strong>ng-class</strong>.</p>
+<p>{% highlight html %}</p>
+<div class="form-group" ng-class="{'has-error':ctrl.hasErrorClass('email')}">
+</div>
+<p>{% endhighlight %}</p>
+<h2>Custom Validators</h2>
+<p><img src="{{ site.baseurl }}/img/MailChimp-Validator.png" alt="Mailchimp Validator" width="439" height="161" class="alignnone size-full wp-image-968" /></p>
+<p>And now for the grand finale! We are going to create a set of custom validators and apply them to the password field. We are also going to track each validator and give the user feedback when each of the validation requirements has been met. The foundation for this starts by creating a directive (which we will call <strong>validatePasswordCharacters</strong>), then requiring <strong>ngModel</strong> and passing it in as a parameter to the <strong>link</strong> function. We can access the <strong>$validators</strong> object on <strong>ngModel</strong> and create our own custom validators such as <strong>lowerCase</strong>, <strong>upperCase</strong>, <strong>eightCharacters</strong>, etc.<br />
+[js]<br />
+.directive('validatePasswordCharacters', function () {<br />
+    return {<br />
+        require: 'ngModel',<br />
+        link: function ($scope, element, attrs, ngModel) {<br />
+            ngModel.$validators.lowerCase = function (value) { };<br />
+            ngModel.$validators.upperCase = function (value) { };<br />
+            ngModel.$validators.number = function (value) { };<br />
+            ngModel.$validators.specialCharacter = function (value) { };<br />
+            ngModel.$validators.eightCharacters = function (value) { };<br />
+        }<br />
+    }<br />
+})<br />
+[/js]</p>
+<p>Each validator accepts a single <strong>value</strong> argument that is evaluated and, depending on whether or not it meets a predetermined condition, will return <strong>true</strong> or <strong>false</strong>. For instance, in the <strong>eightCharacters</strong> validator, we are checking to make sure that <strong>value</strong> is defined and <strong>value.length</strong> is equal to or greater than 8. When this returns <strong>true</strong>, we know that the requirement (a password at least 8 characters long) has been met.</p>
+<p>[js]<br />
+.directive('validatePasswordCharacters', function () {<br />
+    return {<br />
+        require: 'ngModel',<br />
+        link: function ($scope, element, attrs, ngModel) {<br />
+            ngModel.$validators.lowerCase = function (value) {<br />
+                var pattern = /[a-z]+/;<br />
+                return (typeof value !== 'undefined')<br />
+                    &amp;&amp; pattern.test(value);<br />
+            };<br />
+            ngModel.$validators.upperCase = function (value) {<br />
+                var pattern = /[A-Z]+/;<br />
+                return (typeof value !== 'undefined')<br />
+                    &amp;&amp; pattern.test(value);<br />
+            };<br />
+            ngModel.$validators.number = function (value) {<br />
+                var pattern = /\d+/;<br />
+                return (typeof value !== 'undefined')<br />
+                    &amp;&amp; pattern.test(value);<br />
+            };<br />
+            ngModel.$validators.specialCharacter = function (value) {<br />
+                var pattern = /\W+/;<br />
+                return (typeof value !== 'undefined')<br />
+                    &amp;&amp; pattern.test(value);<br />
+            };<br />
+            ngModel.$validators.eightCharacters = function (value) {<br />
+                return (typeof value !== 'undefined')<br />
+                    &amp;&amp; value.length >= 8;<br />
+            };<br />
+        }<br />
+    }<br />
+})<br />
+[/js]</p>
+<p>The other validators work on the exact same premise but use REGEX to ensure that some criteria has been met.</p>
+<p>We now have this set of validators that have been neatly wrapped up in a directive. How do we apply them to an element? We do that by instantiating it like any other directive. We convert <strong>validatePasswordCharacters</strong> from camel case to snake case and attach it to the <strong>password</strong> input as <strong>validate-password-characters</strong>.</p>
+<p>{% highlight html %}<br />
+<input id="password" name="password" class="form-control" required type="{{ctrl.getPasswordType()}}" ng-model-options="{ updateOn : 'default blur' }" ng-model="ctrl.newCustomer.password" validate-password-characters /><br />
+{% endhighlight %}</p>
+<p>And then we can use the validators to dynamically attach a <strong>completed</strong> class to our list of requirements as each of them has been met. Notice that there is now a property on the <strong>$error</strong> object that matches the name of the validator that we added.</p>
+<p>{% highlight html %}</p>
+<div class="password-requirements" ng-if="!ctrl.signupForm.password.$valid">
+<ul class="float-left">
+<li ng-class="{'completed':!ctrl.signupForm.password.$error.lowerCase}">
+            One lowercase character
+        </li>
+<li ng-class="{'completed':!ctrl.signupForm.password.$error.upperCase}">
+            One uppercase character
+        </li>
+<li ng-class="{'completed':!ctrl.signupForm.password.$error.number}">
+            One number
+        </li>
+</ul>
+<ul class="selfclear clearfix">
+<li ng-class="{'completed':!ctrl.signupForm.password.$error.specialCharacter}">
+            One special character
+        </li>
+<li ng-class="{'completed':!ctrl.signupForm.password.$error.eightCharacters}">
+            Eight characters minimum
+        </li>
+</ul>
+</div>
+<p>{% endhighlight %}</p>
+<p>This was by far my favorite feature of the entire experience and I am really impressed with how easy it was to declare and harness custom validators in my form.</p>
+<h2>Review</h2>
+<p>There are a few extra goodies in the repository for you to go and play around with but I feel like we are at a good stopping point so let us do a quick review.</p>
+<ol>
+<li>We can use a boolean flag to toggle the visibility of an element with <strong>ng-if</strong>.</li>
+<li>We can use the <strong>ng-focus</strong> and <strong>ng-blur</strong> event to modify that boolean flag to show a prompt when an input receives focus and hide it when it has lost focus.</li>
+<li>We can bind to any value of any attribute with AngularJS and do clever things like dynamically changing the type of an input field from <strong>password</strong> to <strong>text</strong> and back again.</li>
+<li>We can easily enhance that experience using <strong>ngAnimate</strong> and a few simple CSS transitions.</li>
+<li><strong>ngMessages</strong> allows us to easily and neatly control how we display error messages for an input field.</li>
+<li>We can create custom validators by attaching them to <strong>ngModel.$validators</strong> within a directive.</li>
+<li>When we define a new validator, it becomes a property on on the <strong>$error</strong> object for us to track.</li>
+</ol>
+<h2>Resources</h2>
+<p>This has been a super fun post to writea. Also, I am extremely grateful to Kent and Matias for being great friends and helping me be better; thank you for giving me all the reason I need to sit down and write this post. Last but not least, a huge shout out to MailChimp for creating great tech that captures my imagination.</p>
+<p><a href="http://www.yearofmoo.com/2014/09/taming-forms-in-angularjs-1-3.html" title="Taming Forms in AngularJS 1.3" target="_blank">Taming Forms in AngularJS 1.3</a></p>
+<p><a href="http://www.yearofmoo.com/2014/05/how-to-use-ngmessages-in-angularjs.html" title="How to use ngMessages in AngularJS" target="_blank">How to use ngMessages in AngularJS</a></p>
+<p>[button link="http://simpulton.github.io/angularjs-mailchimp-signup/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-mailchimp-signup" size="large" window="yes"]Code[/button]</p>

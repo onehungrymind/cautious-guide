@@ -1,0 +1,289 @@
+---
+layout: post
+title: ng-animate First Look with AngularJS Wizard
+date: 2013-04-26 18:37:58.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- AngularJS
+- JavaScript
+tags: []
+meta:
+  _edit_last: '8'
+  image: ''
+  _layout: layout-default
+  _thumbnail_id: '687'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _yoast_wpseo_primary_category: ''
+  _wpcom_is_markdown: '1'
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>The Setup</h2>
+<div class="alert alert-success"> This post has been updated to the latest and great on 01-09-2015. You can check it out here: <a href="http://onehungrymind.com/build-angularjs-wizard-redux/" title="Build an AngularJS Wizard Redux">Build an AngularJS Wizard Redux</a></div>
+<p>So my friend Matias, aka <a href="http://www.yearofmoo.com/" title="Year of Moo" target="_blank">Year of Moo</a>, Moo or MooMoo as I like to call him just dropped some animation functionality into AngularJS. I think this is fantastic and am super excited to see AngularJS get some love in the visual department. I dig that I can be functional AND fashionable!</p>
+<p>There is still a lot of work to be done around ng-animate but it is a great start and so I wanted to build something "useful" to get our feet wet. In the spirit of transparency I freely admit that my example is whimsical and silly and so if you write me and are like "You forgot to do BLAH BLAH or it is going to blow up in the enterprise" I AM GOING CLOTHESLINE YOU!</p>
+<p>With that said, we are going to build a wizard style dialog using AngularStrap and ng-animate. And beneath the dialog we find the nucleus.</p>
+<p>[button link="http://onehungrymind.com/wizard/" size="large" window="yes"]Demo[/button]</p>
+<p>[button link="https://github.com/simpulton/angularjs-wizard" size="large" window="yes"]Code[/button]</p>
+<p><img src="{{ site.baseurl }}/img/libre_beginning-300x199.jpg" alt="Nacho Beginning" width="300" height="199" class="alignnone size-medium wp-image-694" /></p>
+<h2>The Foundation</h2>
+<p>We are going to first build the wizard by itself without any of the special sauce and then I am going to show you how easy it is to add in the animations. So let's get down to bizness!</p>
+<h3>Step 1: App Setup Plus AngularStrap</h3>
+<p>The first thing we need to do is get a modal on the page. I opted to use the incredibly useful AngularStrap which can be found here <a href="http://mgcrea.github.io/angular-strap/" title="AngularStrap" target="_blank">http://mgcrea.github.io/angular-strap/</a>.</p>
+<p>I am going to show you the HTML 'skeleton' so we are all on the same page. HAHAHAHAHAH! See what I did there?! I know for a fact that <a href="http://johncblandii.com/" title="John C. Bland" target="_blank">John C. Bland</a> heard my high pitched cackle in his head as he read that very line.</p>
+<p>{% highlight html %}<br />
+<!DOCTYPE html SYSTEM><br />
+<html ng-app="App" ng-controller="AppCtrl"><br />
+<head><br />
+    <title>AngularJS Taco Party</title></p>
+<p></head>
+<pre><code>&lt;link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet"&gt;
+&lt;link rel="stylesheet" type="text/css" href="app.css" /&gt;
+</code></pre>
+<p><body><br />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script><br />
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.1.4/angular.min.js"></script><br />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.1/js/bootstrap.min.js"></script><br />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/angular-strap/0.7.2/angular-strap.min.js"></script><br />
+    <script src="app.js"></script><br />
+</body><br />
+{% endhighlight %}</p>
+<p>Pretty straight forward stuff here. We are importing jQuery, AngularJS, Boostrap and AngularStrap with the Boostrap CSS at the top. We are also auto-bootstrapping AngularJS with the <strong>App</strong> module and defining a <strong>AppCtrl</strong> to go with it.</p>
+<p>To make AngularStrap available to your app you simply need to inject it in as as submodule to your main application module like so.</p>
+<p>[js]<br />
+angular.module('App', ['$strap.directives'])<br />
+.controller('AppCtrl', function($scope) { });<br />
+[/js]</p>
+<h3>Step 2: AngularStrap Modal</h3>
+<p>We technically have an AngularJS application with AngularStrap working and so now we need to actually earn our keep. I really dig that AngularStrap makes it easy to attach the modal to the DOM dynamically via a template without cluttering up your HTML. I have written such a mechanism myself and I am glad no one else ever has to do it again!</p>
+<p>So to show the modal, we are going to add a button to the page that looks like the markup below.</p>
+<p>{% highlight html %}<br />
+<button type="button" class="btn btn-large btn-primary ng-scope" bs-modal="'partials/wizard.html'" data-toggle="modal">I Dare You!</button><br />
+{% endhighlight %}</p>
+<p>There are two parts that I want to point out here. The first part is <strong>bs-modal="'partials/wizard.html'"</strong> which is the conduit for the Boostrap modal to gain access to the page and the attribute value of <strong>partials/wizard.html</strong> is the template that it populates the modal with. The second part is <strong>data-toggle="modal"</strong> which is used to toggle visibility of the modal. Easy!</p>
+<p>And in the partial we start with this basic HTML structure as established by Twitter Bootstrap.</p>
+<p>{% highlight html %}</p>
+<div class="modal-header">
+    <!-- Header code goes here -->
+</div>
+<div class="modal-body">
+    <!-- Body code goes here -->
+</div>
+<div class="modal-footer">
+    <!-- Footer code goes here -->
+</div>
+<p>{% endhighlight %}</p>
+<p>And now we have our modal!</p>
+<h3>Step 3: The Wizard Part One</h3>
+<p>We are now going to put the wiz in wizard. First we need to establish the stages available in the wizard and give users a way to step through them. We do this by creating <strong>$scope.steps</strong> with three steps defined in the array. We also need to keep track of the current step we are on and so we use <strong>$scope.step</strong> to do this.</p>
+<p>[js]<br />
+angular.module('App', ['$strap.directives'])<br />
+.controller('AppCtrl', function($scope) {<br />
+  $scope.steps = ['one', 'two', 'three'];<br />
+  $scope.step = 0;</p>
+<p>$scope.isCurrentStep = function(step) {<br />
+    return $scope.step === step;<br />
+  };</p>
+<p>$scope.setCurrentStep = function(step) {<br />
+    $scope.step = step;<br />
+  };</p>
+<p>$scope.getCurrentStep = function() {<br />
+    return $scope.steps[$scope.step];<br />
+  };<br />
+});<br />
+[/js]</p>
+<p>I am going to elaborate what each of these functions do by anchoring it to the HTML that uses it. In the wizard we have a button group with three buttons. There is one button for each step of the wizard. When you click any of these buttons, it calls <strong>setCurrentStep</strong> with the step that the corresponds to the button. I am also dynamically setting the <strong>btn-primary</strong> class in the CSS with <strong>ng-class</strong> and binding it to the <strong>isCurrentStep</strong> function. I like binding to functions that perform a small unit of logic instead of putting it into my markup. Because of the way AngularJS handles two-way databinding, it is really easy to do this.</p>
+<p>{% highlight html %}</p>
+<div class="btn-group">
+    <button class="btn" ng-class="{'btn-primary':isCurrentStep(0)}" ng-click="setCurrentStep(0)">Uno</button><br />
+    <button class="btn" ng-class="{'btn-primary':isCurrentStep(1)}" ng-click="setCurrentStep(1)">Dos</button><br />
+    <button class="btn" ng-class="{'btn-primary':isCurrentStep(2)}" ng-click="setCurrentStep(2)">Tres</button>
+</div>
+<p>{% endhighlight %}</p>
+<p>Just below the button group, we are going to start to flesh out the structure we want to build out the steps of our wizard in. I am binding <strong>ng-switch</strong> to the <strong>getCurrentStep</strong> method which returns the appropriate label for the switch to work off of. I defined <strong>$scope.steps</strong> as an array of strings for this very reason.</p>
+<p>{% highlight html %}</p>
+<div ng-switch="getCurrentStep()" class="slide-frame">
+<div ng-switch-when="one">
+        <!-- STEP ONE -->
+    </div>
+<div ng-switch-when="two">
+        <!-- STEP TWO -->
+    </div>
+<div ng-switch-when="three">
+        <!-- STEP THREE -->
+    </div>
+</div>
+<p>{% endhighlight %}</p>
+<h3>Step 4: The Wizard Part Two</h3>
+<p>We have a way to jump directly to a state in the wizard via the nav buttons but let us create a way to iterate over the steps with next and previous buttons.</p>
+<p>Let us start with the HTML and then we can dig into the JavaScript that supports it. We have two buttons that are used to call <strong>handlePrevious</strong> and <strong>handleNext</strong> via ng-click. The reason we are passing <strong>dismiss</strong> as a parameter to <strong>handleNext</strong> is that if we are at the last step we need a way to close the modal. If we are on the first step, we want to hide the previous button which is easy enough with <strong>ng-show</strong> and binding it to <strong>!isFirstStep()</strong>. And! If we are on the last step, we want to change the label of the next button to reflect that it is going to behave differently. Could we possibly bind the label to a function as well? Yep! You got it! <strong>getNextLabel</strong> makes a stunning debut!</p>
+<p>{% highlight html %}</p>
+<div class="modal-footer">
+    <a class="btn" ng-click="handlePrevious()" ng-show="!isFirstStep()">Back</a><br />
+    <a class="btn btn-primary" ng-click="handleNext(dismiss)">{{getNextLabel()}}</a>
+</div>
+<p>{% endhighlight %}</p>
+<p>I have called out a few methods that we need to cover in the controller. They are small and to the point and so I am going to briefly comment on them.</p>
+<p><strong>isFirstStep</strong> compares <strong>step</strong> to 0 and returns true if we are indeed on the first step.</p>
+<p><strong>isLastStep</strong> compares <strong>step</strong> to the length of the <strong>steps</strong> array minus 1 (to account for the zero ordinal shift) and returns true of we are on the last step.</p>
+<p><strong>getNextLabel</strong> uses <strong>isLastStep</strong> to determine if we are on the last step and returns either <strong>Submit</strong> or <strong>Next</strong> as the label.</p>
+<p><strong>handlePrevious</strong> uses <strong>isFirstStep</strong> to determine if we are on the first step and if we are not, subtracts 1 from <strong>step</strong>.</p>
+<p><strong>handleNext</strong> uses <strong>isLastStep</strong> to determine if we are on the last step. If we are not, it adds 1 to <strong>step</strong>. If we are, then we call <strong>dismiss</strong> to close the modal. In real life you would process the wizard data just before you called this.</p>
+<p>[js]<br />
+angular.module('App', ['$strap.directives'])<br />
+.controller('AppCtrl', function($scope) {<br />
+    // Code omitted</p>
+<pre><code>$scope.isFirstStep = function() {
+    return $scope.step === 0;
+};
+
+$scope.isLastStep = function() {
+    return $scope.step === ($scope.steps.length - 1);
+};
+
+$scope.getNextLabel = function() {
+    return ($scope.isLastStep()) ? 'Submit' : 'Next'; 
+};
+
+$scope.handlePrevious = function() {
+    $scope.step -= ($scope.isFirstStep()) ? 0 : 1;
+};
+
+$scope.handleNext = function(dismiss) {
+    if($scope.isLastStep()) {
+        dismiss();
+    } else {
+        $scope.step += 1;
+    }
+};
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>And now we have a working wizard that we can step through! Okay! I admit we are missing the animations and the content but that is exactly what we are going to cover next.</p>
+<p><img src="{{ site.baseurl }}/img/nacho_corn.gif" alt="Nacho Corn" width="500" height="211" class="alignnone size-full wp-image-695" /></p>
+<h2>Let's Animate!</h2>
+<p>And now it is time to get to the punchline! ng-animate works on JavaScript or CSS animations and you can spin them up a couple ways. In this tutorial we are going to take the path of least resistance and use the ng-animate directive in conjunction with the ng-switch which has animation events built in to make it easy to control.</p>
+<p>So how does this work? In a nutshell, you attach ng-animate to a directive that supports animations such as ng-switch and then give it a value that corresponds to some CSS styling we are going to get to in just a moment. You can see that I have done this via <strong>ng-animate="slide"</strong>.</p>
+<p>{% highlight html %}</p>
+<div ng-switch="getCurrentStep()" ng-animate="'slide'" class="slide-frame">
+    <!-- OMITTED -->
+</div>
+<p>{% endhighlight %}</p>
+<p><strong>ng-animate</strong> works with a few methods such as <strong>enter</strong>, <strong>hide</strong>, <strong>leave</strong>, <strong>move</strong> and <strong>show</strong> and you define the <strong>setup</strong> and <strong>start</strong> state for each animation in the CSS.</p>
+<p>The formula is as follows [animation-name]-[method]-[state-of-animation] so following this format we define slide as slide-enter-setup and slide-enter-start. So we have defined the animation on enter but does the format work the same for leave? Yep! We apply the same formula and we get slide-leave-setup and slide-leave-start. You will notice that I have one extra block of CSS where I define enter and leave setup. ng-animate allows you to define custom easing animations and so I like to get that out of the way way in one fell swoop.</p>
+<p>[css]<br />
+.slide-enter-setup, .slide-leave-setup {<br />
+  -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  -moz-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  -o-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+}<br />
+[/css]</p>
+<p>[css]<br />
+.slide-enter-setup {<br />
+  position:absolute;<br />
+  left:0;<br />
+  top:-200px;<br />
+}</p>
+<p>.slide-enter-start {<br />
+  top:0;<br />
+}</p>
+<p>.slide-leave-setup {<br />
+  position:absolute;<br />
+  top:0;<br />
+}</p>
+<p>.slide-leave-start {<br />
+  top:200px;<br />
+}<br />
+[/css]</p>
+<p>I have defined the <strong>slide</strong> animation to animate from -200px to 0px on enter and from 0px to 200px on leave.</p>
+<p><strong>Slide</strong> moves from top to bottom but let us create another animation that moves from left to right and call it <strong>wave</strong>.</p>
+<p>[css]<br />
+.wave-enter-setup, .wave-leave-setup {<br />
+  -webkit-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  -moz-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  -o-transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+  transition:all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;<br />
+}<br />
+[/css]</p>
+<p>[css]<br />
+.wave-enter-setup {<br />
+  position:absolute;<br />
+  left:-100%;<br />
+}</p>
+<p>.wave-enter-start {<br />
+  left:0;<br />
+}</p>
+<p>.wave-leave-setup {<br />
+  position:absolute;<br />
+  left:0;<br />
+}</p>
+<p>.wave-leave-start {<br />
+  left:100%;<br />
+}<br />
+[/css]</p>
+<p>Take a moment and try to identify the pattern I talked about earlier. See it? Easy. With <strong>wave</strong>, we are simply moving from left to right 100% of the width. We could write these all day long now!</p>
+<p>And to use <strong>wave</strong> instead of <strong>slide</strong> we just change <strong>ng-animate</strong> to <strong>ng-animate="'wave'"</strong>.</p>
+<p>{% highlight html %}</p>
+<div ng-switch="getCurrentStep()" ng-animate="'wave'" class="slide-frame">
+    <!-- OMITTED -->
+</div>
+<p>{% endhighlight %}</p>
+<p>And now we have a wizard dialog that you can open and animate from step to step. Super awesome but we need to actually do something "useful" with it!</p>
+<p><img src="{{ site.baseurl }}/img/nacho_fly-300x203.jpg" alt="Nacho Fly" width="300" height="203" class="alignnone size-medium wp-image-692" /></p>
+<h2>Pro Tip Alert! State and ng-switch</h2>
+<p><strong>ng-switch</strong> is like a good neighbor and it cleans up after its children as it moves from one view to another. This is a good thing! But! It does cause problems when you need to preserve values from one view to another.</p>
+<p>The solutions to this is pretty simple actually. You create a model object on the parent scope to use in the children. I have done this by declaring the <strong>$scope.wizard</strong> object on <strong>AppCtrl</strong>.</p>
+<p>[js]<br />
+angular.module('App', ['$strap.directives'])<br />
+.controller('AppCtrl', function($scope) {<br />
+    $scope.steps = ['one', 'two', 'three'];<br />
+    $scope.stepIndex = 0;<br />
+    $scope.wizard = { tacos: 2 };</p>
+<pre><code>// CODE OMITTED
+</code></pre>
+<p>});<br />
+[/js]</p>
+<p>From there you define your ng-models in the children views to reference the <strong>wizard</strong> object like so <strong>ng-model="wizard.tacos"</strong>.</p>
+<p>{% highlight html %}</p>
+<div ng-switch-when="two">
+<fieldset>
+<div class="control-group">
+            <label class="control-label" for="select01">How Many Tacos?</label>  </p>
+<div class="controls">
+<select id="select01" ng-model="wizard.tacos">
+<option>Unlimited</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+</select></div>
+</p></div>
+<div class="control-group">
+            <label class="control-label" for="multiSelect">Toppings?</label>  </p>
+<div class="controls">
+<select multiple="multiple" id="multiSelect" ng-model="wizard.toppings">
+<option>Cheese</option>
+<option>Guacamole</option>
+<option>Mild Salsa</option>
+<option>Hot Salsa</option>
+<option>Cilantro</option>
+</select></div>
+</p></div>
+</fieldset>
+</div>
+<p>{% endhighlight %}</p>
+<h2>Conclusion</h2>
+<p>We have covered a lot of ground and I have had a lot of fun building out the example project. This is just a first look at ng-animate but I think it is a great step in the right direction to kicking up our AngularJS apps a notch.</p>
+<p>Big ups to MooMoo for all his great work and we are already kicking around some ideas on how to make it even better. Stay tuned!</p>
+<h2>Resources</h2>
+<p>Source Files: <a href="https://github.com/simpulton/angularjs-wizard" title="Source" target="_blank">https://github.com/simpulton/angularjs-wizard</a></p>
+<p>Year of Moo: <a href="http://www.yearofmoo.com/2013/04/animation-in-angularjs.html" title="Year of Moo" target="_blank">http://www.yearofmoo.com/2013/04/animation-in-angularjs.html</a></p>
+<p>AngularStrap: <a href="http://mgcrea.github.io/angular-strap/" title="AngularStrap" target="_blank">http://mgcrea.github.io/angular-strap/</a></p>
+<p>AngularJS Docs: <a href="http://code.angularjs.org/1.1.4/docs/api/ng.directive:ngAnimate" title="AngularJS Docs" target="_blank">http://code.angularjs.org/1.1.4/docs/api/ng.directive:ngAnimate</a></html></p>

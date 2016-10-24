@@ -1,0 +1,189 @@
+---
+layout: post
+title: Dreams Do Come True! Named Router Outlets in Angular 2
+date: 2016-10-11 19:54:17.000000000 -07:00
+type: post
+published: true
+status: publish
+categories:
+- Angular 2
+- Programming
+tags: []
+meta:
+  _wpcom_is_markdown: '1'
+  _edit_last: '1'
+  _yoast_wpseo_primary_category: '34'
+  _yoast_wpseo_content_score: '30'
+  _thumbnail_id: '1314'
+  _nina_cross_promo: a:1:{s:8:"template";s:17:"custom_1399328552";}
+  _wp_old_slug: dreams-come-true-named-router-outlets-angular-2
+author:
+  login: ohmadmin
+  email: simpul@gmail.com
+  display_name: Lukas Ruebbelke
+  first_name: Lukas
+  last_name: Ruebbelke
+---
+<h2>Intro</h2>
+<p>I am generally a positive person that endeavors to say nice things about people and frameworks. In the broadest sense, I love Angular, and it has been an amazing tool to build some really cool things. Angular 2 has exceeded my expectations in a lot of ways. But! There has always been some cognitive dissonance when it comes to the router in Angular 2. Its interesting history is no secret, and historically it has personally been a huge source of frustration for me. Having named outlets was something that I completely took for granted with UI-Router, and it drove me crazy that for the longest time, they just did not exist in Angular 2 and I wanted it! Well, dreams do come true! In the newest router, setting up named router outlets is a snap and in fact, they work pretty much exactly like unnamed router outlets. Please give Victor Savkin a hug next time you see him.</p>
+
+<p>Speaking of Victor, I would like to thank him for his valuable input on this post.</p>
+<p><img src="{{ site.baseurl }}/img/victor-quote.png" alt="Victor Quote" width="687" height="99" class="alignnone size-full wp-image-1315" /></p>
+<p>Our sample project allows us to see a list of speakers and their bios when you select on them. The speaker list and speaker bio components are mapped to two parallel named router outlets. Grab the sample project below and let's go!</p>
+<p>[button link="https://github.com/onehungrymind/ng2-named-router-outlets" size="large" window="yes"]Sample Code[/button]</p>
+<h2>Routing Module</h2>
+<p>The first thing that we need to do when setting up routes for our project is to define the routing table. We will start out with a basic <strong>home</strong> route that maps to the <strong>HomeComponent</strong> and then add another route to redirect the root path to our <strong>home</strong> route.</p>
+<p>[js]<br />
+const routes: Routes = [<br />
+  { path: '', redirectTo: 'home', pathMatch: 'full' },<br />
+  { path: 'home', component: HomeComponent }<br />
+];</p>
+<p>@NgModule({<br />
+  imports: [RouterModule.forRoot(routes)],<br />
+  exports: [RouterModule],<br />
+  providers: []<br />
+})<br />
+export class RoutingModule { }<br />
+[/js]</p>
+<p>We will create another route that maps to our <strong>SpeakersComponent</strong> that has two children routes that we will use to introduce our named router outlets. Within the <strong>speakers</strong> route, we want to be able to display a list of speakers and the bio for the currently selected speaker. We accomplish this by adding in two child routes for the <strong>SpeakerListComponent</strong> and the <strong>BioComponent</strong>. Notice that both child routes follow the exact same structure as their parent route with the presence of a <strong>path</strong> and <strong>component</strong> property. The difference is that we have introduced an <strong>outlet</strong> property that we will use to map to a <strong>router-outlet</strong> in our template.</p>
+<p>[js]<br />
+const routes: Routes = [<br />
+  { path: '', redirectTo: 'home', pathMatch: 'full' },<br />
+  { path: 'home', component: HomeComponent },<br />
+  { path: 'speakers', component: SpeakersComponent, children: [<br />
+    { path: 'speakersList', component: SpeakersListComponent, outlet: 'list' },<br />
+    { path: ':id', component: BioComponent, outlet: 'bio' }<br />
+  ] }<br />
+];<br />
+[/js]</p>
+<p>The path for the <strong>bio</strong> outlet is <strong>:id</strong> which we will use to send in a route param to load in a specific speaker.</p>
+<h2>Router Outlet</h2>
+<p>We are using an unnamed router outlet to load our <strong>home</strong> and <strong>speakers</strong> route as seen in the template below.</p>
+<p>{% highlight html %}</p>
+<div class="app-content">
+  <router-outlet></router-outlet>
+</div>
+<p>{% endhighlight %}</p>
+<p>In our <strong>SpeakersComponent</strong> template, we are going to do essentially the same thing but instead of one router outlet, we will use two. And so that the router can delineate what component goes into what outlet, we will add a <strong>name</strong> attribute that matches up to our routing table. The route with the <strong>list</strong> output will be loaded into the outlet named <strong>list</strong> and so on.</p>
+<p>{% highlight html %}</p>
+<div class="columns">
+  <md-card><br />
+    <router-outlet name="list"></router-outlet><br />
+  </md-card><br />
+  <md-card><br />
+    <router-outlet name="bio"></router-outlet><br />
+  </md-card>
+</div>
+<p>{% endhighlight %}</p>
+<h2>Router Navigate</h2>
+<p>So far this has been a fairly straightforward exercise in the universe matching up with what we expect to see. Things get a little more interesting when we want to navigate to parallel named router outlets.</p>
+<p>We can navigate to a route within our template using the <strong>routerLink</strong> directive and if the route is static then we can simply pass in the value to the route we want to navigate to. Because we do not need to pass in an dynamic values to the <strong>home</strong> route, adding <strong>routerLink="home"</strong> to our button will suffice.</p>
+<p>{% highlight html %}<br />
+<button routerlink="home" md-button>Home</button><br />
+{% endhighlight %}</p>
+<p>When a route needs to generate a dynamic URL, we can pass it an array of values that get mapped to the URL. In our case, when we go to the <strong>speakers</strong> route, we want to map our <strong>list</strong> outlet to the <strong>speakerList</strong> path and our <strong>bio</strong> outlet to have a path of <strong>none</strong> which evaluates to a speaker id of <strong>none</strong>.</p>
+<p>{% highlight html %}<br />
+<button md-button<br />
+  [routerLink]="['/speakers', {outlets: {'list': ['speakersList'], 'bio': ['none']}}]"><br />
+  Speakers</p>
+<p>{% endhighlight %}</p>
+<p>This will generate a URL that looks like this <strong>http://localhost:4200/speakers/(list:speakersList//bio:none)</strong> and looks like this in the application.</p>
+<p><img src="{{ site.baseurl }}/img/none-outlet.png" alt="Outlet" width="900" height="703" class="aligncenter size-full wp-image-1312" /></p>
+<p>To navigate to a specific speaker, we will first add a <strong>click</strong> handler to our speakers list that calls <strong>showBio</strong> with the <strong>speaker.id</strong>.</p>
+<p>{% highlight html %}<br />
+<md-grid-list cols="3" guttersize="4px"><br />
+  <md-grid-tile<br />
+    *ngFor="let speaker of speakers"<br />
+    [style.background-image]="'url(assets/' + speaker.src + ')'"<br />
+    (click)="showBio(speaker.id)"><br />
+</md-grid-list><br />
+{% endhighlight %}</p>
+<p>And within our <strong>SpeakersListComponent</strong>, we will call <strong>router.navigate</strong> to update our <strong>bio</strong> outlet with a path based on the <strong>id</strong> parameter.</p>
+<p>[js]<br />
+showBio(id) {<br />
+  this.router.navigate(['/speakers', {outlets: {'bio': [id]}}]);<br />
+}<br />
+[/js]</p>
+<p>This will generate a URL that looks like this <strong>http://localhost:4200/speakers/(bio:1//list:speakersList)</strong> and looks like this in the application.</p>
+<p><img src="{{ site.baseurl }}/img/lukas-outlet.png" alt="Lukas Outlet" width="900" height="703" class="aligncenter size-full wp-image-1313" /></p>
+<p>For reference, you can see the entire <strong>SpeakersListComponent</strong> below.</p>
+<p>[js]<br />
+import { Component, OnInit } from '@angular/core';<br />
+import { Router }  from '@angular/router';<br />
+import { SpeakersService, Speaker } from '../shared';</p>
+<p>@Component({<br />
+  selector: 'app-speakers-list',<br />
+  templateUrl: './speakers-list.component.html',<br />
+  styleUrls: ['./speakers-list.component.css']<br />
+})<br />
+export class SpeakersListComponent implements OnInit {<br />
+  speakers: Speaker[] = [];</p>
+<p>constructor(<br />
+    private router: Router,<br />
+    private service: SpeakersService<br />
+  ) { }</p>
+<p>ngOnInit() {<br />
+    this.speakers = this.service.getSpeakers();<br />
+  }</p>
+<p>showBio(id) {<br />
+    this.router.navigate(['/speakers', {outlets: {'bio': [id]}}]);<br />
+  }<br />
+}<br />
+[/js]</p>
+<h2>Route Params</h2>
+<p>We are successfully generating a URL that communicates appropriate paths to our named router outlets but how do we use that information to do something useful? We can use <strong>ActivatedRoute</strong> to get the route parameters off of the active route to perform logic within our components. In our case, we want to use the <strong>id</strong> parameter to retrieve the correct speaker information so that we can display it in our template. We can use <strong>Activated</strong> to get all sorts of useful information about the route loaded within a component but in our case, we are most interested in the <strong>params</strong> property. The <strong>params</strong> property is an observable that we can subscribe to that will give us the parameters that have been scoped to the current route.</p>
+<p>[js]<br />
+ngOnInit() {<br />
+  this.route.params.subscribe((params: {id: string}) => {<br />
+    this.currentSpeaker = this.service.getSpeakerByID(params.id);<br />
+  });<br />
+}<br />
+[/js]</p>
+<p>Within the <strong>subscribe</strong> method, we will use <strong>params.id</strong> to set <strong>this.currentSpeaker</strong> by calling <strong>this.service.getSpeakerByID</strong>.</p>
+<p>For reference, you can see the entire <strong>BioComponent</strong> below.</p>
+<p>[js]<br />
+import { Component, OnInit } from '@angular/core';<br />
+import { ActivatedRoute } from '@angular/router';<br />
+import { SpeakersService, Speaker } from '../shared';</p>
+<p>@Component({<br />
+  selector: 'app-bio',<br />
+  templateUrl: './bio.component.html',<br />
+  styleUrls: ['./bio.component.css']<br />
+})<br />
+export class BioComponent implements OnInit {<br />
+  currentSpeaker: Speaker;</p>
+<p>constructor(<br />
+    private route: ActivatedRoute,<br />
+    private service: SpeakersService<br />
+  ) { }</p>
+<p>ngOnInit() {<br />
+    this.route.params.subscribe((params: {id: string}) => {<br />
+      this.currentSpeaker = this.service.getSpeakerByID(params.id);<br />
+    });<br />
+  }<br />
+}<br />
+[/js]</p>
+<p>And just to wrap things up, within our <strong>BioComponent</strong> template, we are binding to <strong>currentSpeaker</strong> and using the safe navigation operator to keep our template stable when there isn't a speaker selected.</p>
+<p>{% highlight html %}</p>
+<div *ngIf="!currentSpeaker">
+  <md-card-title>Please select a speaker</md-card-title><br />
+  <md-card-subtitle>No speaker selected</md-card-subtitle></p>
+<p><md-card-title>{{currentSpeaker?.name}}</md-card-title><br />
+<md-card-subtitle>{{currentSpeaker?.bio}}</md-card-subtitle><br />
+{% endhighlight %}</p>
+<p><img src="{{ site.baseurl }}/img/victor-outlet.png" alt="Victor Outlet" width="900" height="703" class="aligncenter size-full wp-image-1311" /></p>
+<h2>Review</h2>
+<p>And this is how we can have parallel, named router outlets within our Angular 2 application! I am so happy!</p>
+<p>Let's do a quick recap of what we covered.</p>
+<ul>
+<li>A named outlet route works just like an unnamed outlet route with the difference being the addition of the <strong>outlet</strong> property on the route definition.</li>
+<li>We add a <strong>name</strong> property to the <strong>router-outlet</strong> element so the router knows where to load the component.</li>
+<li>When navigating to a route with named outlets, we need to add in an <strong>outlet</strong> object that defines the approprioate path for each outlet</li>
+<li>We can use <strong>Router.navigate</strong> to navigate to a route within our component.</li>
+<li>We can use <strong>ActivatedRoute</strong> to get route parameter values to perform logic within our component.</li>
+</ul>
+<h2>Resources</h2>
+<p>A super awesome resource in general. <a href="https://vsavkin.com/" target="_blank">Victor Savkin's Blog</a></p>
+<p>Well worth the $25 investment. Buy it now! <a href="https://leanpub.com/router" target="_blank">Angular 2 Router Book by Victor Savkin</a></p>
+<p>And just in case... <a href="https://angular.io/docs/ts/latest/api/#!?query=router" target="_blank">Router API Documentation</a></p>
+<p>[button link="https://github.com/onehungrymind/ng2-named-router-outlets" size="large" window="yes"]Sample Code[/button]</p>
